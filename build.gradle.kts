@@ -15,6 +15,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("org.jsoup:jsoup:1.17.2")
+    implementation("org.xerial:sqlite-jdbc:3.47.2.0")
 
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
@@ -36,4 +37,3 @@ tasks.named<JavaExec>("run") {
 application {
     mainClass.set("io.github.d4vinci.scrapling.cli.MainKt")
 }
-

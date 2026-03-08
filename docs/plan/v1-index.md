@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | M0 Foundation | Gradle/Kotlin 工程基线、目录结构、首个红绿测试闭环 | 构建可运行、测试可执行、文档矩阵落地 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.SelectorTest"` | done |
 | M1 Parser Baseline | `Selector` / `Selectors` / `TextHandler` / `AttributesHandler` 基础能力 | CSS 查询、文本/属性访问、基础导航通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.*"` | done |
-| M2 Parser Advanced | XPath、正则、自适应重定位、存储 | parser advanced/adaptive 测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*Adaptive*"` | todo |
+| M2 Parser Advanced | XPath、正则、自适应重定位、存储 | parser advanced/adaptive 测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.SelectorAdvancedTest" --tests "io.github.d4vinci.scrapling.core.storage.SQLiteStorageSystemTest"` | doing |
 | M3 Static Fetchers | HTTP fetchers、sessions、response | 静态抓取测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` | todo |
 | M4 Browser Fetchers | dynamic / stealth fetchers | 浏览器抓取测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` | todo |
 | M5 Spiders | Spider 引擎、调度、checkpoint、会话 | spiders 测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` | todo |
@@ -32,8 +32,8 @@
 
 | Req ID | v1 Plan | 测试/命令 | 证据 | 状态 |
 |---|---|---|---|---|
-| REQ-0001-001 | `docs/plan/v1-parser-baseline.md`; `docs/plan/v1-parser-advanced.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"` 于 2026-03-08 通过；XPath 与 adaptive 仍待 M2 补齐 | doing |
-| REQ-0001-002 | `docs/plan/v1-parser-advanced.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*Adaptive*"` | 待执行 | todo |
+| REQ-0001-001 | `docs/plan/v1-parser-baseline.md`; `docs/plan/v1-parser-advanced.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"` 于 2026-03-08 通过；XPath 与 adaptive 已进入 M2 首刀，但更完整的 advanced 面仍待补齐 | doing |
+| REQ-0001-002 | `docs/plan/v1-parser-advanced.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.SelectorAdvancedTest" --tests "io.github.d4vinci.scrapling.core.storage.SQLiteStorageSystemTest"` | XPath variables、SQLite storage、adaptive init、adaptive relocation 于 2026-03-08 通过 | doing |
 | REQ-0001-003 | `docs/plan/v1-parser-baseline.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"` 于 2026-03-08 通过 | done |
 | REQ-0001-004 | `docs/plan/v1-static-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` | 待执行 | todo |
 | REQ-0001-005 | `docs/plan/v1-browser-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` | 待执行 | todo |
@@ -52,4 +52,4 @@
 
 - 当前仓库已初始化 Git，并启用按 slice `commit + push` 的交付纪律。
 - 浏览器抓取技术选型尚未锁定到具体实现层，需在 M4 前形成明确方案。
-- 解析层当前已完成 baseline 里程碑，XPath 与 adaptive 能力尚未落地。
+- 解析层当前已完成 baseline，并落下 M2 首刀；更完整的 XPath / adaptive / storage 边界仍待继续扩展。
