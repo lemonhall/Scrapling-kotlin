@@ -40,6 +40,21 @@ class BrowserFetchersTest {
     }
 
     @Test
+    fun dynamicFetcherSupportsPageActionAutomation() {
+        val response = DynamicFetcher.fetch(
+            server.url("/action-page"),
+            BrowserFetchOptions(
+                pageAction = { page -> page.locator("#trigger").click() },
+                waitSelector = "#action-result",
+                waitSelectorState = WaitSelectorStateValue.VISIBLE,
+            ),
+        )
+
+        assertEquals(200, response.status)
+        assertEquals("clicked", response.css("#action-result::text").get()?.value)
+    }
+
+    @Test
     fun dynamicFetcherSupportsHeadlessAndHeadfulLaunches() {
         val headlessResponse = DynamicFetcher.fetch(
             server.url("/basic"),
@@ -88,6 +103,51 @@ class BrowserFetchersTest {
 
         assertEquals(200, response.status)
         assertEquals("webrtc-blocked|webgl-blocked", response.css("#result::text").get()?.value)
+    }
+
+    @Test
+    fun stealthySessionDetectsCloudflareMarkers() {
+        val matchingUrls = listOf(
+            "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/123456",
+            "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/orchestrate/jsch/v1",
+            "http://challenges.cloudflare.com/cdn-cgi/challenge-platform/scripts/abc",
+        )
+        val nonMatchingUrls = listOf(
+            "https://example.com/challenge",
+            "https://cloudflare.com/something",
+            "https://challenges.cloudflare.com/other-path",
+        )
+
+        matchingUrls.forEach { url ->
+            assertTrue(StealthySession.cloudflarePattern.matches(url))
+        }
+        nonMatchingUrls.forEach { url ->
+            assertTrue(!StealthySession.cloudflarePattern.matches(url))
+        }
+
+        assertEquals(
+            "managed",
+            StealthySession.detectCloudflare(
+                """
+                <html>
+                    <script>
+                        cType: 'managed'
+                    </script>
+                </html>
+                """.trimIndent(),
+            ),
+        )
+        assertEquals(
+            "embedded",
+            StealthySession.detectCloudflare(
+                """
+                <html>
+                    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
+                </html>
+                """.trimIndent(),
+            ),
+        )
+        assertEquals(null, StealthySession.detectCloudflare("<html><body><p>Regular page</p></body></html>"))
     }
 
     @Test
@@ -158,6 +218,20 @@ class BrowserFetchersTest {
                       <body>
                         <h1>resource</h1>
                         <img src="/assets/pixel.png" alt="pixel" />
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/action-page") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <button id="trigger" onclick="document.getElementById('action-result').textContent='clicked'">Go</button>
+                        <div id="action-result"></div>
                       </body>
                     </html>
                     """.trimIndent(),

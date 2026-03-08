@@ -66,6 +66,7 @@ open class DynamicSession(
             if (options.networkIdle) {
                 page.waitForLoadState(LoadState.NETWORKIDLE)
             }
+            options.pageAction?.invoke(page)
             options.waitForMillis?.let(page::waitForTimeout)
             options.waitSelector?.let { selector ->
                 page.waitForSelector(
@@ -129,4 +130,10 @@ open class DynamicSession(
 
 class StealthySession(
     defaultOptions: BrowserFetchOptions = BrowserFetchOptions(blockWebRtc = true),
-) : DynamicSession(defaultOptions)
+) : DynamicSession(defaultOptions) {
+    companion object {
+        val cloudflarePattern: Regex = CloudflareInspector.challengeUrlPattern
+
+        fun detectCloudflare(pageContent: String): String? = CloudflareInspector.detect(pageContent)
+    }
+}

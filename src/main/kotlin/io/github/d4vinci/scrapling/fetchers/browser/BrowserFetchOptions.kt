@@ -1,11 +1,13 @@
 package io.github.d4vinci.scrapling.fetchers.browser
 
 import com.microsoft.playwright.options.WaitForSelectorState
+import com.microsoft.playwright.Page
 
 data class BrowserFetchOptions(
     val headless: Boolean = true,
     val disableResources: Boolean = false,
     val blockedDomains: Set<String> = emptySet(),
+    val pageAction: ((Page) -> Unit)? = null,
     val waitSelector: String? = null,
     val waitSelectorState: WaitSelectorStateValue = WaitSelectorStateValue.ATTACHED,
     val waitForMillis: Double? = null,

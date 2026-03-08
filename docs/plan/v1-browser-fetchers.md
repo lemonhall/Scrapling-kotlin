@@ -48,7 +48,7 @@
 - 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
 - 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
-- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、基础 stealth 配置以及 async browser/session 的真实浏览器测试；Cloudflare、真实 page reuse、更多 stealth 语义仍待补齐。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、基础 stealth 配置、async browser/session、pageAction 与 Cloudflare 检测的真实测试；真实 page reuse、Cloudflare 求解、更多 stealth 语义仍待补齐。
 
 ## Delivered Slice 1
 
@@ -63,3 +63,9 @@
 - `AsyncDynamicFetcher` / `AsyncStealthyFetcher`：补齐异步浏览器 fetcher 直接入口。
 - `BrowserPagePool`：补齐 `maxPages`、`pagesCount`、`busyCount` 统计口径。
 - 异步测试：覆盖并发请求、page pool 释放、stealth 选项、直接 fetch 与关闭后报错路径。
+
+## Delivered Slice 3
+
+- `pageAction`：补齐浏览器自动化回调入口，可在返回前执行点击/滚动等页面动作。
+- `CloudflareInspector`：补齐 challenge URL 正则与页面内容检测语义，当前支持 `non-interactive`、`managed`、`interactive`、`embedded`。
+- 测试：新增自动化按钮点击与 Cloudflare 检测断言，确保语义不漂移。
