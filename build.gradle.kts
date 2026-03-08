@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.SourceSetContainer
+
 plugins {
     kotlin("jvm") version "2.0.21"
     kotlin("plugin.serialization") version "2.0.21"
@@ -12,6 +14,7 @@ repositories {
 }
 
 dependencies {
+    implementation("com.microsoft.playwright:playwright:1.56.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("org.jsoup:jsoup:1.17.2")
@@ -36,4 +39,14 @@ tasks.named<JavaExec>("run") {
 
 application {
     mainClass.set("io.github.d4vinci.scrapling.cli.MainKt")
+}
+
+val sourceSets = the<SourceSetContainer>()
+
+tasks.register<JavaExec>("installPlaywrightChromium") {
+    group = "playwright"
+    description = "Install Playwright Chromium browser binaries"
+    classpath = sourceSets.named("main").get().runtimeClasspath
+    mainClass.set("com.microsoft.playwright.CLI")
+    args("install", "chromium")
 }

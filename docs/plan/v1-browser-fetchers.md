@@ -43,3 +43,16 @@
 
 - 浏览器依赖体积、操作系统兼容与 CI 稳定性是主要风险
 
+## Current Status
+
+- 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
+- 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
+- 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、基础 stealth 配置的真实浏览器测试；page pool、async browser/session、更多 stealth 语义仍待补齐。
+
+## Delivered Slice 1
+
+- `DynamicFetcher` / `DynamicSession`：基于 Playwright Java 提供同步浏览器抓取入口。
+- `StealthyFetcher` / `StealthySession`：补齐基础 stealth 入口，当前已落地 `blockWebRtc` 与 `allowWebgl` init script。
+- `BrowserFetchOptions`：统一承载 `headless`、`waitSelector`、`disableResources`、`extraHeaders`、cookies 等浏览器侧参数。
+- 浏览器自动化测试：使用本地 `HttpServer` 真实验证动态 DOM、等待策略、headful/headless、资源屏蔽与 stealth 检测页。

@@ -18,6 +18,8 @@
 - `M2 Parser Advanced`：done
 - `M3 Static Fetchers`：done
 - `M3 Static Fetchers`：sync/async + proxy + timeout/重试 已落地；下一里程碑为 `M4 Browser Fetchers`
+- `M4 Browser Fetchers`：in progress
+- `M4 Browser Fetchers`：Playwright Java + Chromium 首刀已落地；page pool/async browser 仍待补齐
 
 ## Default Workflow
 
@@ -33,6 +35,8 @@
 - Parser：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"`
 - Core：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"`
 - Static Fetchers：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`
+- Browser Fetchers：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`
+- Install Chromium：`.\gradlew.bat installPlaywrightChromium`
 
 ## File / Doc Discipline
 

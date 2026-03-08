@@ -15,6 +15,7 @@
 - `M1 Parser Baseline`：已完成
 - `M2 Parser Advanced`：已完成
 - `M3 Static Fetchers`：已完成
+- `M4 Browser Fetchers`：进行中
 
 已落地内容：
 
@@ -26,6 +27,7 @@
 - M3 第二刀已落地：`JdkHttpTransport`、真实 HTTP 请求、redirect 与 cookie session reuse 已通过本地 `HttpServer` 测试
 - M3 第三刀已落地：timeout/重试真行为已通过本地 `HttpServer` 验证，当前剩余 async/proxy 语义待补齐
 - M3 第四刀已落地：`AsyncFetcherClient` / `AsyncFetcherSession` 与异步真实 HTTP 已通过本地 `HttpServer` 验证，当前剩余 proxy 语义待补齐
+- M4 首切已落地：`Playwright Java + Chromium` 浏览器抓取基线、dynamic/stealth 同步 fetcher、wait selector、headless/headful、资源屏蔽测试
 
 ## 快速命令
 
@@ -36,6 +38,8 @@ Windows PowerShell：
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"
+.\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"
+.\gradlew.bat installPlaywrightChromium
 ```
 
 ## 仓库结构

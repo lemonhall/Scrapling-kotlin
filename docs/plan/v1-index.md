@@ -14,7 +14,7 @@
 | M1 Parser Baseline | `Selector` / `Selectors` / `TextHandler` / `AttributesHandler` 基础能力 | CSS 查询、文本/属性访问、基础导航通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.*"` | done |
 | M2 Parser Advanced | XPath、正则、自适应重定位、存储 | parser advanced/adaptive 测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.storage.*"` | done |
 | M3 Static Fetchers | HTTP fetchers、sessions、response | 静态抓取测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` | done |
-| M4 Browser Fetchers | dynamic / stealth fetchers | 浏览器抓取测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` | todo |
+| M4 Browser Fetchers | dynamic / stealth fetchers | 浏览器抓取测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` | doing |
 | M5 Spiders | Spider 引擎、调度、checkpoint、会话 | spiders 测试通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` | todo |
 | M6 CLI + MCP + Docs | CLI、Shell、MCP、使用文档 | cli/ai/docs 验收通过 | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.cli.*"`; `./gradlew.bat test --tests "io.github.d4vinci.scrapling.ai.*"` | todo |
 
@@ -36,7 +36,7 @@
 | REQ-0001-002 | `docs/plan/v1-parser-advanced.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.storage.*"` | XPath variables、selector generation、`save/retrieve/relocate`、`urlJoin`、`re/reFirst`、SQLite storage 于 2026-03-08 通过 | done |
 | REQ-0001-003 | `docs/plan/v1-parser-baseline.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"` 于 2026-03-08 通过 | done |
 | REQ-0001-004 | `docs/plan/v1-static-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` | `StaticFetchersTest` + `StaticFetchersJdkTransportTest` + `AsyncStaticFetchersTest` 已覆盖 sync/async Response 适配、真实 GET/POST/PUT/DELETE、redirect、cookie session reuse、proxy、timeout/重试、session 默认值与 double-open；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过 | done |
-| REQ-0001-005 | `docs/plan/v1-browser-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` | 待执行 | todo |
+| REQ-0001-005 | `docs/plan/v1-browser-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` | `BrowserFetchersTest` 已覆盖动态内容加载、wait selector、headless/headful、资源屏蔽、基础 stealth 脚本与 session double-open；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过，剩余 page pool/async browser/session 语义待补齐 | doing |
 | REQ-0001-006 | `docs/plan/v1-spiders-core.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` | 待执行 | todo |
 | REQ-0001-007 | `docs/plan/v1-cli-and-mcp.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.cli.*"` | 待执行 | todo |
 | REQ-0001-008 | `docs/plan/v1-cli-and-mcp.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.ai.*"` | 待执行 | todo |
@@ -51,5 +51,5 @@
 ## 差异列表
 
 - 当前仓库已初始化 Git，并启用按 slice `commit + push` 的交付纪律。
-- 浏览器抓取技术选型尚未锁定到具体实现层，需在 M4 前形成明确方案。
-- 解析层当前已完成 M1 + M2；M3 Static Fetchers 已完成，下一里程碑进入 M4 Browser Fetchers。
+- M4 已锁定 `Playwright Java + Chromium` 方案，当前首刀已落地 dynamic/stealth 同步抓取基线。
+- 解析层当前已完成 M1 + M2；M3 Static Fetchers 已完成，M4 Browser Fetchers 正在推进 page pool/async browser 语义。
