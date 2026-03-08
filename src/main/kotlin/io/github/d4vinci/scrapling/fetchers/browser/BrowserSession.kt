@@ -62,6 +62,9 @@ open class DynamicSession(
             if (options.networkIdle) {
                 page.waitForLoadState(LoadState.NETWORKIDLE)
             }
+            if (options.solveCloudflare) {
+                CloudflareSolver.solve(page)
+            }
             options.pageAction?.invoke(page)
             options.waitForMillis?.let(page::waitForTimeout)
             options.waitSelector?.let { selector ->

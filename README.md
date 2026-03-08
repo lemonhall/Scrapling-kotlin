@@ -33,6 +33,7 @@
 - M4 第四刀已落地：浏览器请求选项回归测试已覆盖 `extraHeaders`、`cookies` 与 `networkIdle`，当前剩余真实 page reuse / Cloudflare 求解 / 更多 stealth 语义待补齐
 - M4 第五刀已落地：stealth launch flags、`hideCanvas`、`navigator.webdriver` 伪装与 `realChrome -> chrome` 通道修正已落地，当前剩余真实 page reuse / Cloudflare 求解 待补齐
 - M4 第六刀已落地：真实 page reuse / pool ready-state 已落地，`fetch()` 级 cookies 也已接入；当前剩余 Cloudflare 求解
+- M4 第七刀已落地：Cloudflare 基础求解 flow 已落地；但 M4 仍剩 `timeout/load_dom/wait`、`proxy/retries`、`init_script/user_data_dir/cdp_url` 等参数级对齐工作
 
 ## 快速命令
 

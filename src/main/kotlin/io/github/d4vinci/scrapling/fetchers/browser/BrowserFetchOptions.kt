@@ -12,6 +12,7 @@ data class BrowserFetchOptions(
     val waitSelectorState: WaitSelectorStateValue = WaitSelectorStateValue.ATTACHED,
     val waitForMillis: Double? = null,
     val networkIdle: Boolean = false,
+    val solveCloudflare: Boolean = false,
     val extraHeaders: Map<String, String> = emptyMap(),
     val cookies: List<BrowserCookie> = emptyList(),
     val locale: String? = null,

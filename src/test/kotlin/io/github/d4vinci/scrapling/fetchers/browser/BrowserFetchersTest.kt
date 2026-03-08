@@ -145,6 +145,36 @@ class BrowserFetchersTest {
     }
 
     @Test
+    fun stealthyFetcherSolvesManagedCloudflareChallenge() {
+        val response = StealthyFetcher.fetch(
+            server.url("/cf-managed"),
+            BrowserFetchOptions(
+                solveCloudflare = true,
+                waitSelector = "#challenge-result",
+                waitSelectorState = WaitSelectorStateValue.VISIBLE,
+            ),
+        )
+
+        assertEquals(200, response.status)
+        assertEquals("managed-passed", response.css("#challenge-result::text").get()?.value)
+    }
+
+    @Test
+    fun stealthyFetcherWaitsOutNonInteractiveCloudflareChallenge() {
+        val response = StealthyFetcher.fetch(
+            server.url("/cf-non-interactive"),
+            BrowserFetchOptions(
+                solveCloudflare = true,
+                waitSelector = "#challenge-result",
+                waitSelectorState = WaitSelectorStateValue.VISIBLE,
+            ),
+        )
+
+        assertEquals(200, response.status)
+        assertEquals("non-interactive-passed", response.css("#challenge-result::text").get()?.value)
+    }
+
+    @Test
     fun stealthySessionDetectsCloudflareMarkers() {
         val matchingUrls = listOf(
             "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/123456",
@@ -379,6 +409,60 @@ class BrowserFetchersTest {
                         <script>
                           const value = navigator.webdriver === undefined ? 'undefined' : String(navigator.webdriver);
                           document.getElementById('webdriver').textContent = value;
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/cf-managed") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <head><title>Just a moment...</title></head>
+                      <body>
+                        <div id="cf-marker">cType: 'managed'</div>
+                        <div class="main-content">
+                          <p>Verifying you are human.</p>
+                          <div>
+                            <div>
+                              <div id="cf-box" style="width:120px;height:40px;border:1px solid #333;">verify</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div id="challenge-result"></div>
+                        <script>
+                          const box = document.getElementById('cf-box');
+                          box.addEventListener('click', () => {
+                            document.title = 'Solved';
+                            document.getElementById('cf-marker').remove();
+                            document.querySelector('.main-content').remove();
+                            document.getElementById('challenge-result').textContent = 'managed-passed';
+                          });
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/cf-non-interactive") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <head><title>Just a moment...</title></head>
+                      <body>
+                        <div id="cf-marker">cType: 'non-interactive'</div>
+                        <div id="challenge-result"></div>
+                        <script>
+                          setTimeout(() => {
+                            document.title = 'Solved';
+                            document.getElementById('cf-marker').remove();
+                            document.getElementById('challenge-result').textContent = 'non-interactive-passed';
+                          }, 300);
                         </script>
                       </body>
                     </html>

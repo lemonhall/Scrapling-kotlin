@@ -48,7 +48,7 @@
 - 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
 - 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
-- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、真实 page reuse、pageAction 与 Cloudflare 检测的真实测试；Cloudflare 求解仍待补齐。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow 的真实测试；但对照上游参数模型，`timeout/load_dom/wait` 口径、`proxy/proxy_rotator`、`retries/retry_delay`、`google_search` referer、`init_script/user_data_dir/cdp_url/additional_args/extra_flags/selector_config` 仍待补齐。
 
 ## Delivered Slice 1
 
@@ -89,3 +89,16 @@
 - `DynamicSession` / `AsyncDynamicSession`：补齐 page 复用语义；顺序请求会复用同一 page，并在请求结束后执行 `unrouteAll()`、清空额外请求头、回到 `about:blank`，避免脏状态泄漏到下一次 fetch。
 - 请求期 cookies：`fetch()` 级别的 `cookies` 现在也会写入 context，不再只在 session 初始 `defaultOptions` 中生效。
 - 测试：sync/async session 现已验证两次请求会命中同一 page identity，且 pool 统计会保留一个 ready page；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过。
+
+## Delivered Slice 7
+
+- `BrowserFetchOptions.solveCloudflare`：补齐 Cloudflare 求解开关，与现有检测能力打通。
+- `CloudflareSolver`：新增基础 solver，覆盖 `non-interactive` 等待页与 `managed/embedded` 点击型挑战的启发式处理，并复用现有 detector 与网络稳定等待逻辑。
+- 测试：新增 `/cf-managed` 与 `/cf-non-interactive` 本地挑战页，验证 stealth fetcher 能在求解后返回真实业务内容；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过。
+
+## Remaining Parity Gaps
+
+- 参数口径：`timeout`、`load_dom`、`wait` 仍未与上游命名和行为完全对齐。
+- 连接能力：`proxy` / `proxy_rotator`、`retries` / `retry_delay` 仍未接入浏览器 fetch 流程。
+- 启动/上下文：`init_script`、`user_data_dir`、`cdp_url`、`additional_args`、`extra_flags` 仍待补齐。
+- 导航/响应：`google_search` referer、`selector_config` 与更完整的 response 捕获语义仍待补齐。
