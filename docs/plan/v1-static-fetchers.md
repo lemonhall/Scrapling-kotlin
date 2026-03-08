@@ -43,3 +43,15 @@
 
 - JVM HTTP 栈选择会影响后续 proxy/cookies/async 的一致性
 
+## Current Status
+
+- 2026-03-08：已完成 M3 首切，新增 `RequestOptions`、`RawHttpResponse`、`HttpTransport`、`Response`、`ResponseFactory`、`FetcherClient`、`FetcherSession`。
+- 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`、`./gradlew.bat test`。
+- 当前仍未满足第 3 条反作弊验收：测试仍基于注入式 stub transport，下一刀需补真实 HTTP transport 与本地 server 级联测试。
+
+## Delivered Slice 1
+
+- `ResponseFactory.fromRaw(...)`：将原始 HTTP 响应转为 parser-aware `Response`。
+- `Response`：复用 `Selector` 能力，已打通 `css(...)`、`xpath(...)`、`getAllText()`。
+- `FetcherClient`：提供 `get/post/put/delete` 同步门面，通过 `HttpTransport` 注入。
+- `FetcherSession`：提供默认 `timeout/retries/stealthyHeaders`、显式 `open()` 与 double-open 防护。

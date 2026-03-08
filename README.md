@@ -22,6 +22,7 @@
 - 源项目审计：`docs/research/source-project-audit-2026-03-08.md`
 - 解析器基础层：`Selector`、`Selectors`、`TextHandler`、`TextHandlers`、`AttributesHandler`
 - 已验证语义：CSS 查询、`::text`、`::attr(...)`、`get/getall`、outer HTML、`prettify`、基础导航
+- M3 首切已落地：`fetchers.static` 中的 `ResponseFactory`、`Response`、`FetcherClient`、`FetcherSession`、`HttpTransport` 抽象
 
 ## 快速命令
 
@@ -31,6 +32,7 @@ Windows PowerShell：
 .\gradlew.bat test
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"
+.\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"
 ```
 
 ## 仓库结构

@@ -31,6 +31,7 @@
 - 全量测试：`.\gradlew.bat test`
 - Parser：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"`
 - Core：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"`
+- Static Fetchers：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`
 
 ## File / Doc Discipline
 
