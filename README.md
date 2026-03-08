@@ -30,6 +30,7 @@
 - M4 首切已落地：`Playwright Java + Chromium` 浏览器抓取基线、dynamic/stealth 同步 fetcher、wait selector、headless/headful、资源屏蔽测试
 - M4 第二刀已落地：`AsyncDynamicSession` / `AsyncStealthySession`、`BrowserPagePool` 与异步浏览器测试已落地，当前剩余 Cloudflare/真实 page reuse 语义待补齐
 - M4 第三刀已落地：`pageAction` 与 `CloudflareInspector` 已落地，当前剩余真实 page reuse / Cloudflare 求解 / 更多 stealth 语义待补齐
+- M4 第四刀已落地：浏览器请求选项回归测试已覆盖 `extraHeaders`、`cookies` 与 `networkIdle`，当前剩余真实 page reuse / Cloudflare 求解 / 更多 stealth 语义待补齐
 
 ## 快速命令
 

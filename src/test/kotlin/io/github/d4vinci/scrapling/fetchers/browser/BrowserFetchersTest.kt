@@ -55,6 +55,34 @@ class BrowserFetchersTest {
     }
 
     @Test
+    fun dynamicFetcherSupportsExtraHeadersCookiesAndNetworkIdle() {
+        val headerResponse = DynamicFetcher.fetch(
+            server.url("/echo-header"),
+            BrowserFetchOptions(extraHeaders = mapOf("X-Test" to "browser-header")),
+        )
+        val cookieResponse = DynamicFetcher.fetch(
+            server.url("/cookie-page"),
+            BrowserFetchOptions(
+                cookies = listOf(
+                    BrowserCookie(
+                        name = "session",
+                        value = "browser-cookie",
+                        domain = "127.0.0.1",
+                    ),
+                ),
+            ),
+        )
+        val idleResponse = DynamicFetcher.fetch(
+            server.url("/idle-page"),
+            BrowserFetchOptions(networkIdle = true),
+        )
+
+        assertEquals("browser-header", headerResponse.css("h1::text").get()?.value)
+        assertEquals("session=browser-cookie", cookieResponse.css("h1::text").get()?.value)
+        assertEquals("idle-ready", idleResponse.css("#idle::text").get()?.value)
+    }
+
+    @Test
     fun dynamicFetcherSupportsHeadlessAndHeadfulLaunches() {
         val headlessResponse = DynamicFetcher.fetch(
             server.url("/basic"),
@@ -236,6 +264,49 @@ class BrowserFetchersTest {
                     </html>
                     """.trimIndent(),
                 )
+            }
+            server.createContext("/echo-header") { exchange ->
+                val value = exchange.requestHeaders.getFirst("X-Test") ?: "missing"
+                respond(exchange, 200, "<html><body><h1>$value</h1></body></html>")
+            }
+            server.createContext("/cookie-page") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <script>
+                          document.body.innerHTML = `<h1>${'$'}{document.cookie}</h1>`;
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/idle-page") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <div id="idle">loading</div>
+                        <script>
+                          fetch('/idle-data')
+                            .then((response) => response.text())
+                            .then((text) => {
+                              document.getElementById('idle').textContent = text;
+                            });
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/idle-data") { exchange ->
+                Thread.sleep(300)
+                respond(exchange, 200, "idle-ready")
             }
             server.createContext("/assets/pixel.png") { exchange ->
                 imageCounter.incrementAndGet()

@@ -48,7 +48,7 @@
 - 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
 - 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
-- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、基础 stealth 配置、async browser/session、pageAction 与 Cloudflare 检测的真实测试；真实 page reuse、Cloudflare 求解、更多 stealth 语义仍待补齐。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、async browser/session、pageAction 与 Cloudflare 检测的真实测试；真实 page reuse、Cloudflare 求解、更多 stealth 语义仍待补齐。
 
 ## Delivered Slice 1
 
@@ -69,3 +69,9 @@
 - `pageAction`：补齐浏览器自动化回调入口，可在返回前执行点击/滚动等页面动作。
 - `CloudflareInspector`：补齐 challenge URL 正则与页面内容检测语义，当前支持 `non-interactive`、`managed`、`interactive`、`embedded`。
 - 测试：新增自动化按钮点击与 Cloudflare 检测断言，确保语义不漂移。
+
+## Delivered Slice 4
+
+- 浏览器请求选项语义：新增 `extraHeaders`、`cookies` 与 `networkIdle` 的真实回归测试，确保 fetcher 侧选项会真正传递到浏览器上下文与导航等待策略。
+- 本地测试路由：补齐 `/echo-header`、`/cookie-page`、`/idle-page`、`/idle-data`，不依赖静态 fixture，直接验证浏览器发出的请求头、页面内 cookie 与异步网络收敛行为。
+- 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 再次通过。
