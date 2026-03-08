@@ -20,6 +20,8 @@ data class BrowserFetchOptions(
     val networkIdle: Boolean = false,
     val solveCloudflare: Boolean = false,
     val googleSearch: Boolean = false,
+    val proxy: BrowserProxyValue? = null,
+    val proxyRotator: BrowserProxyRotator? = null,
     val extraHeaders: Map<String, String> = emptyMap(),
     val cookies: List<BrowserCookie> = emptyList(),
     val locale: String? = null,

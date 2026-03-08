@@ -109,12 +109,17 @@ internal object BrowserLaunchSupport {
         .setLocale(options.locale)
         .setTimezoneId(options.timezoneId)
         .setUserAgent(options.userAgent)
+        .also { BrowserProxySupport.applyProxy(it, options.proxy) }
         .also { applyAdditionalArgs(it, options.additionalArgs) }
 
-    fun newContextOptions(options: BrowserFetchOptions): Browser.NewContextOptions = Browser.NewContextOptions()
+    fun newContextOptions(
+        options: BrowserFetchOptions,
+        proxy: BrowserProxyValue? = options.proxy,
+    ): Browser.NewContextOptions = Browser.NewContextOptions()
         .setLocale(options.locale)
         .setTimezoneId(options.timezoneId)
         .setUserAgent(options.userAgent)
+        .also { BrowserProxySupport.applyProxy(it, proxy) }
         .also { applyAdditionalArgs(it, options.additionalArgs) }
 
     fun validateCdpUrl(cdpUrl: String) {

@@ -48,7 +48,7 @@
 - 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
 - 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
-- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/loadDom/wait/retries/retryDelay`、`google_search` referer、`init_script/user_data_dir/cdp_url/extra_flags/additionalArgs/selectorConfig` 的真实测试；但对照上游参数模型，`proxy/proxy_rotator` 仍待补齐。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/loadDom/wait/retries/retryDelay`、`google_search` referer、`init_script/user_data_dir/cdp_url/extra_flags/additionalArgs/selectorConfig`、`proxy/proxy_rotator` 的真实测试；M4 Browser Fetchers 已达到当前 v1 DoD。
 
 ## Delivered Slice 1
 
@@ -109,7 +109,13 @@
 - `BrowserLaunchSupport`：支持 `extraFlags`，并把 `additionalArgs` 的 viewport / permissions / ignoreHttpsErrors 子集映射到 context options。
 - 导航与响应：当开启 `googleSearch` 且未显式提供 referer 时，会自动注入 Google referer；浏览器 response 现会透传 `selectorConfig` 到解析层。
 - 测试：新增 `init script`、Google referer、`selectorConfig`、`userDataDir` 持久化、`cdpUrl` 校验、`extraFlags`、`additionalArgs(viewport)` 回归测试；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-09 通过。
+## Delivered Slice 10
+
+- `BrowserFetchOptions`：补齐 `proxy` 与 `proxyRotator`，新增 `BrowserProxyUrl`、`BrowserProxySettings`、`BrowserProxyRotator` 代理模型，对齐上游静态代理与轮转代理能力。
+- `DynamicSession`：补齐 shared context 与 transient proxy context 分流；静态 session proxy 走默认 context，请求级静态代理与 rotator 走临时 context，避免污染 page pool 复用语义。
+- `BrowserLaunchSupport`：补齐 Playwright Java 代理映射，把静态代理注入 `newContextOptions` / `persistentContextOptions`；`cdpUrl`、`userDataDir` 与 proxy path 的组合语义保持一致。
+- 验证：新增真实浏览器代理回归 `dynamicFetcherSupportsStaticProxy`、`dynamicFetcherRotatesProxyServersAcrossRequests`，以及 `BrowserProxySupportTest` 对 rotator 循环、proxy 鉴权解析、proxy/proxyRotator 冲突校验；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-09 通过。
 
 ## Remaining Parity Gaps
 
-- 连接能力：`proxy` / `proxy_rotator` 仍未接入浏览器 fetch 流程。
+- M4 范围内暂无剩余 parity gap；下一阶段进入后续里程碑能力扩展。

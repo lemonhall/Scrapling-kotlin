@@ -26,6 +26,7 @@ open class DynamicSession(
 
     fun open(): DynamicSession {
         check(!isOpen) { "DynamicSession is already open." }
+        BrowserProxySupport.validate(defaultOptions)
 
         playwright = Playwright.create()
         val browserType = playwright!!.chromium()
@@ -33,7 +34,16 @@ open class DynamicSession(
             !defaultOptions.cdpUrl.isNullOrBlank() -> {
                 BrowserLaunchSupport.validateCdpUrl(defaultOptions.cdpUrl)
                 browser = browserType.connectOverCDP(defaultOptions.cdpUrl)
-                browser!!.contexts().firstOrNull() ?: browser!!.newContext(BrowserLaunchSupport.newContextOptions(defaultOptions))
+                if (defaultOptions.proxyRotator != null) {
+                    null
+                } else {
+                    browser!!.contexts().firstOrNull() ?: browser!!.newContext(BrowserLaunchSupport.newContextOptions(defaultOptions))
+                }
+            }
+
+            defaultOptions.proxyRotator != null -> {
+                browser = browserType.launch(BrowserLaunchSupport.launchOptions(defaultOptions, stealth))
+                null
             }
 
             !defaultOptions.userDataDir.isNullOrBlank() -> {
@@ -50,21 +60,27 @@ open class DynamicSession(
                 newContext(defaultOptions)
             }
         }
-        applyContextDecorations(context ?: error("Browser context is not initialized."), defaultOptions)
+        context?.let { applyContextDecorations(it, defaultOptions) }
         isOpen = true
         return this
     }
 
     fun fetch(url: String, options: BrowserFetchOptions = defaultOptions): Response {
         check(isOpen) { "DynamicSession must be opened before fetch." }
-        val activeContext = context ?: error("Browser context is not initialized.")
+        BrowserProxySupport.validate(options)
         var lastError: Exception? = null
 
         repeat(options.retries.coerceAtLeast(1)) { attemptIndex ->
-            val page = pagePool.acquirePage(activeContext::newPage)
+            val transientContext = createTransientContext(options)
+            val activeContext = transientContext ?: context ?: error("Browser context is not initialized.")
+            val page = if (transientContext == null) {
+                pagePool.acquirePage(activeContext::newPage)
+            } else {
+                activeContext.newPage()
+            }
             var blockedRequests = 0
             var continuedRequests = 0
-            var reusable = true
+            var reusable = transientContext == null
 
             try {
                 val effectiveTimeout = if (options.solveCloudflare) {
@@ -133,7 +149,10 @@ open class DynamicSession(
                     Thread.sleep(options.retryDelay.toLong())
                 }
             } finally {
-                if (reusable && cleanupReusablePage(page)) {
+                if (transientContext != null) {
+                    runCatching { page.close() }
+                    runCatching { transientContext.close() }
+                } else if (reusable && cleanupReusablePage(page)) {
                     pagePool.releasePage(page)
                 } else {
                     pagePool.discardPage(page)
@@ -153,6 +172,16 @@ open class DynamicSession(
     protected open fun newContext(options: BrowserFetchOptions): BrowserContext {
         val activeBrowser = browser ?: error("Browser is not initialized.")
         return activeBrowser.newContext(BrowserLaunchSupport.newContextOptions(options))
+    }
+
+    private fun createTransientContext(options: BrowserFetchOptions): BrowserContext? {
+        val requestedProxy = options.proxy?.takeIf { it != defaultOptions.proxy }
+        val activeRotator = options.proxyRotator ?: defaultOptions.proxyRotator
+        val activeProxy = requestedProxy ?: activeRotator?.getProxy() ?: return null
+        val activeBrowser = browser ?: error("Browser is not initialized.")
+        return activeBrowser.newContext(BrowserLaunchSupport.newContextOptions(options, activeProxy)).also {
+            applyContextDecorations(it, options)
+        }
     }
 
     private fun applyContextDecorations(context: BrowserContext, options: BrowserFetchOptions) {

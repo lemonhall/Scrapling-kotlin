@@ -176,6 +176,44 @@ class BrowserFetchersTest {
     }
 
     @Test
+    fun dynamicFetcherSupportsStaticProxy() {
+        BrowserProxyTestServer.start("proxy-a") .use { proxy ->
+            val response = DynamicFetcher.fetch(
+                server.url("/proxy-target"),
+                BrowserFetchOptions(
+                    proxy = BrowserProxyUrl(proxy.serverUrl()),
+                    extraFlags = listOf("--proxy-bypass-list=<-loopback>"),
+                ),
+            )
+
+            assertEquals("proxy-a", response.css("h1::text").get()?.value)
+            assertTrue(proxy.hits() >= 1)
+        }
+    }
+
+    @Test
+    fun dynamicFetcherRotatesProxyServersAcrossRequests() {
+        BrowserProxyTestServer.start("proxy-a").use { proxyA ->
+            BrowserProxyTestServer.start("proxy-b").use { proxyB ->
+                val options = BrowserFetchOptions(
+                    proxyRotator = BrowserProxyRotator(
+                        listOf(BrowserProxyUrl(proxyA.serverUrl()), BrowserProxyUrl(proxyB.serverUrl())),
+                    ),
+                    extraFlags = listOf("--proxy-bypass-list=<-loopback>"),
+                )
+
+                val first = DynamicFetcher.fetch(server.url("/proxy-target"), options)
+                val second = DynamicFetcher.fetch(server.url("/proxy-target"), options)
+
+                assertEquals("proxy-a", first.css("h1::text").get()?.value)
+                assertEquals("proxy-b", second.css("h1::text").get()?.value)
+                assertTrue(proxyA.hits() >= 1)
+                assertTrue(proxyB.hits() >= 1)
+            }
+        }
+    }
+
+    @Test
     fun dynamicFetcherSupportsHeadlessAndHeadfulLaunches() {
         val headlessResponse = DynamicFetcher.fetch(
             server.url("/basic"),
@@ -505,6 +543,9 @@ class BrowserFetchersTest {
                     """.trimIndent(),
                 )
             }
+            server.createContext("/proxy-target") { exchange ->
+                respond(exchange, 200, "<html><body><h1>origin-direct</h1></body></html>")
+            }
             server.createContext("/storage-page") { exchange ->
                 respond(
                     exchange,
@@ -661,6 +702,41 @@ class BrowserFetchersTest {
                 server.registerContexts()
                 httpServer.start()
                 return server
+            }
+        }
+    }
+
+    private class BrowserProxyTestServer private constructor(
+        private val server: HttpServer,
+        private val label: String,
+        private val hitCounter: AtomicInteger,
+    ) : AutoCloseable {
+        fun serverUrl(): String = "http://127.0.0.1:${server.address.port}"
+
+        fun hits(): Int = hitCounter.get()
+
+        override fun close() {
+            server.stop(0)
+        }
+
+        private fun registerContexts() {
+            server.createContext("/") { exchange ->
+                hitCounter.incrementAndGet()
+                val body = "<html><body><h1>$label</h1></body></html>"
+                val bytes = body.encodeToByteArray()
+                exchange.responseHeaders.add("Content-Type", "text/html; charset=utf-8")
+                exchange.sendResponseHeaders(200, bytes.size.toLong())
+                exchange.responseBody.use { it.write(bytes) }
+            }
+        }
+
+        companion object {
+            fun start(label: String): BrowserProxyTestServer {
+                val httpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+                val proxyServer = BrowserProxyTestServer(httpServer, label, AtomicInteger(0))
+                proxyServer.registerContexts()
+                httpServer.start()
+                return proxyServer
             }
         }
     }

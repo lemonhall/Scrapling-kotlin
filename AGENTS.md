@@ -18,8 +18,8 @@
 - `M2 Parser Advanced`：done
 - `M3 Static Fetchers`：done
 - `M3 Static Fetchers`：sync/async + proxy + timeout/重试 已落地；下一里程碑为 `M4 Browser Fetchers`
-- `M4 Browser Fetchers`：in progress
-- `M4 Browser Fetchers`：Playwright Java + Chromium sync/async 基线、browser request option 语义测试、stealth launch parity、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/wait/retries`、`googleSearch/initScript/userDataDir/cdpUrl/extraFlags/additionalArgs/selectorConfig` 已落地；当前主要只剩 `proxy/proxy_rotator`
+- `M4 Browser Fetchers`：done
+- `M4 Browser Fetchers`：Playwright Java + Chromium sync/async 基线、browser request option 语义测试、stealth launch parity、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/wait/retries`、`googleSearch/initScript/userDataDir/cdpUrl/extraFlags/additionalArgs/selectorConfig`、`proxy/proxyRotator` 已落地；M4 DoD 已达成
 
 ## Default Workflow
 
