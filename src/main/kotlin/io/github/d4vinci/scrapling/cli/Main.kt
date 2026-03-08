@@ -1,5 +1,7 @@
 package io.github.d4vinci.scrapling.cli
 
-fun main() {
-    println("scrapling-kotlin bootstrap CLI")
+import kotlin.system.exitProcess
+
+fun main(args: Array<String>) {
+    exitProcess(ScraplingCli().run(args))
 }

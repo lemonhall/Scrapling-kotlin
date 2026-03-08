@@ -17,12 +17,10 @@
 - `M1 Parser Baseline`：done
 - `M2 Parser Advanced`：done
 - `M3 Static Fetchers`：done
-- `M3 Static Fetchers`：sync/async + proxy + timeout/重试 已落地；下一里程碑为 `M4 Browser Fetchers`
 - `M4 Browser Fetchers`：done
-- `M4 Browser Fetchers`：Playwright Java + Chromium sync/async 基线、browser request option 语义测试、stealth launch parity、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/wait/retries`、`googleSearch/initScript/userDataDir/cdpUrl/extraFlags/additionalArgs/selectorConfig`、`proxy/proxyRotator` 已落地；M4 DoD 已达成
 - `M5 Spiders`：done
-- `M5 Spiders`：第三刀已落地真实并发 crawl、`processRequest/taskWrapper`、blocked retry、item store / stream 分流、pause + checkpoint 闭环；M5 DoD 已达成，下一里程碑为 `M6 CLI + MCP + Docs`
-
+- `M6 CLI + MCP + Docs`：done
+- `M6` 已落地：`ScraplingCli` / `ScraplingShell` / `ContentExtractor` / `ScraplingMcpServer` 与 `docs/index.md`、`docs/cli/index.md`、`docs/ai/index.md`、`docs/tutorials/getting-started.md` 均已落地；v1 当前 DoD 已全部达成
 ## Default Workflow
 
 - 默认持续推进，不做碎片化汇报；除非阻塞、失败、风险升级或需要人类确认。
@@ -34,17 +32,21 @@
 ## Quick Commands
 
 - 全量测试：`.\gradlew.bat test`
+- CLI：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.cli.*"`
+- AI / MCP：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.ai.*"`
 - Parser：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"`
 - Core：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"`
 - Static Fetchers：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`
 - Browser Fetchers：`.\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`
+- 运行 CLI：`.\gradlew.bat run --args="extract get https://example.com output.md"`
+- 启动 MCP：`.\gradlew.bat run --args="mcp --http --host 127.0.0.1 --port 8000"`
 - Install Chromium：`.\gradlew.bat installPlaywrightChromium`
-
 ## File / Doc Discipline
 
 - 改 public behavior、里程碑状态或执行范围时，同步更新：
   - `docs/plan/v1-index.md`
   - 对应 `docs/plan/v1-*.md`
+  - `docs/index.md` 与对应 `docs/*/index.md`
   - 必要时更新 `README.md`
 - 如果发现 PRD/计划与现实不符，优先补 ECN 或至少把差异写入 `v1-index`，不要只改代码。
 

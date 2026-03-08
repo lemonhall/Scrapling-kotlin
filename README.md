@@ -17,6 +17,7 @@
 - `M3 Static Fetchers`：已完成
 - `M4 Browser Fetchers`：已完成
 - `M5 Spiders`：已完成
+- `M6 CLI + MCP + Docs`：已完成
 
 已落地内容：
 
@@ -39,6 +40,7 @@
 - M4 第九刀已落地：`googleSearch`、`initScript`、`userDataDir`、`cdpUrl`、`extraFlags`、`additionalArgs`、`selectorConfig` 已接入；当前 M4 主要只剩 `proxy/proxy_rotator`
 - M4 第十刀已落地：`proxy` / `proxyRotator`、静态代理覆盖、按请求轮转代理、Playwright 代理模型映射与冲突校验已接入；`BrowserFetchersTest` / `BrowserProxySupportTest` 已完成真实回归，M4 DoD 达成
 - M5 第三刀已落地：真实并发 crawl、`processRequest/taskWrapper`、blocked retry、item store / stream 分流、pause + checkpoint 闭环已补齐；`spiders` 测试与全量测试均已通过，M5 DoD 达成
+- M6 已落地：`ScraplingCli` / `ScraplingShell` / `ContentExtractor` / `ScraplingMcpServer` 已接入；`docs/index.md`、`docs/cli/index.md`、`docs/ai/index.md`、`docs/tutorials/getting-started.md`、`docs/api/index.md` 已补齐，M6 DoD 达成
 
 ## 快速命令
 
@@ -50,22 +52,33 @@ Windows PowerShell：
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"
 .\gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"
+.\gradlew.bat test --tests "io.github.d4vinci.scrapling.cli.*"
+.\gradlew.bat test --tests "io.github.d4vinci.scrapling.ai.*"
 .\gradlew.bat installPlaywrightChromium
+.\gradlew.bat run --args="extract get https://example.com output.md"
+.\gradlew.bat run --args="mcp --http --host 127.0.0.1 --port 8000"
 ```
 
 ## 仓库结构
 
 ```text
 docs/
+├─ index.md    # 文档总索引
 ├─ prd/        # 愿景与需求定义
 ├─ plan/       # v1 计划、追溯矩阵、里程碑状态
+├─ parser/     # parser 能力文档
+├─ fetchers/   # fetchers 能力文档
+├─ spiders/    # spiders 能力文档
+├─ cli/        # CLI 与 shell 文档
+├─ ai/         # MCP / AI 文档
+├─ tutorials/  # 入门教程
+├─ api/        # API 索引
 └─ research/   # 对源项目/参考仓库的审计材料
 
 src/
 ├─ main/kotlin/io/github/d4vinci/scrapling/
 └─ test/kotlin/io/github/d4vinci/scrapling/
 ```
-
 ## 里程碑路线
 
 - `M0 Foundation`：Gradle/Kotlin 工程基线、文档矩阵、首个红绿闭环
@@ -88,5 +101,7 @@ src/
 - 愿景：`docs/prd/VISION.md`
 - PRD：`docs/prd/PRD-0001-capability-parity.md`
 - v1 索引：`docs/plan/v1-index.md`
+- 文档首页：`docs/index.md`
+- 入门教程：`docs/tutorials/getting-started.md`
 - M1 计划：`docs/plan/v1-parser-baseline.md`
 - M2 计划：`docs/plan/v1-parser-advanced.md`

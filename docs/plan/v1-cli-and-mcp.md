@@ -51,3 +51,22 @@
 
 - CLI 解析库与协程/流式 IO 设计会影响 MCP 实现边界
 
+## Status
+
+- State: done
+- Completed At: `2026-03-09`
+- DoD: met
+
+## Delivered Slice
+
+- `ScraplingCli` 提供 `install`、`shell`、`extract`、`mcp` 四类对外入口。
+- `ScraplingShell` 暴露 `get`、`post`、`Fetcher`、`DynamicFetcher`、`view`、`uncurl` 等 shell namespace 对象。
+- `ContentExtractor` 统一处理 HTML 到 Markdown / HTML / Text 的导出，并按 `.md` / `.html` / `.txt` 落盘。
+- `ScraplingMcpServer` 暴露 `get`、`bulk_get`、`fetch`、`bulk_fetch`、`stealthy_fetch`、`bulk_stealthy_fetch`。
+- `docs/` 新增 parser、fetchers、spiders、cli、ai、tutorials、api 索引文档，构成 M6 用户入门矩阵。
+
+## Verification
+
+- `./gradlew.bat test --tests "io.github.d4vinci.scrapling.cli.*"` 于 `2026-03-09` 通过。
+- `./gradlew.bat test --tests "io.github.d4vinci.scrapling.ai.*"` 于 `2026-03-09` 通过。
+- `./gradlew.bat test` 于 `2026-03-09` 通过。
