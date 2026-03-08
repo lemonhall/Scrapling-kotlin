@@ -17,6 +17,9 @@ open class DynamicSession(
     private var browser: Browser? = null
     internal var context: BrowserContext? = null
 
+    val maxPages: Int = 1
+    val pagePool = BrowserPagePool(maxPages)
+
     var isOpen: Boolean = false
         private set
 
@@ -37,6 +40,7 @@ open class DynamicSession(
     fun fetch(url: String, options: BrowserFetchOptions = defaultOptions): Response {
         check(isOpen) { "DynamicSession must be opened before fetch." }
         val activeContext = context ?: error("Browser context is not initialized.")
+        pagePool.markPageAcquired()
         val page = activeContext.newPage()
         var blockedRequests = 0
         var continuedRequests = 0
@@ -81,8 +85,15 @@ open class DynamicSession(
             )
         } finally {
             page.close()
+            pagePool.markPageReleased()
         }
     }
+
+    fun getPoolStats(): Map<String, Int> = mapOf(
+        "total_pages" to pagePool.pagesCount,
+        "busy_pages" to pagePool.busyCount,
+        "max_pages" to maxPages,
+    )
 
     protected open fun newContext(options: BrowserFetchOptions): BrowserContext {
         val activeBrowser = browser ?: error("Browser is not initialized.")
