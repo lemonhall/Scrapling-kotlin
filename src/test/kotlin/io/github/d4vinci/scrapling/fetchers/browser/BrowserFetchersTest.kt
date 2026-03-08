@@ -83,6 +83,28 @@ class BrowserFetchersTest {
     }
 
     @Test
+    fun dynamicFetcherSupportsWaitAliasAndRetriesAfterTimeout() {
+        server.resetRetryTimeoutHits()
+
+        val waitResponse = DynamicFetcher.fetch(
+            server.url("/wait-page"),
+            BrowserFetchOptions(wait = 250.0),
+        )
+        val retryResponse = DynamicFetcher.fetch(
+            server.url("/retry-timeout"),
+            BrowserFetchOptions(
+                timeout = 200.0,
+                retries = 2,
+                retryDelay = 50.0,
+            ),
+        )
+
+        assertEquals("wait-ready", waitResponse.css("#wait-result::text").get()?.value)
+        assertEquals("retry-recovered", retryResponse.css("h1::text").get()?.value)
+        assertEquals(2, server.retryTimeoutHits())
+    }
+
+    @Test
     fun dynamicFetcherSupportsHeadlessAndHeadfulLaunches() {
         val headlessResponse = DynamicFetcher.fetch(
             server.url("/basic"),
@@ -252,13 +274,20 @@ class BrowserFetchersTest {
     private class BrowserTestServer private constructor(
         private val server: HttpServer,
         private val imageCounter: AtomicInteger,
+        private val retryTimeoutCounter: AtomicInteger,
     ) : AutoCloseable {
         fun url(path: String): String = "http://127.0.0.1:${server.address.port}$path"
 
         fun imageHits(): Int = imageCounter.get()
 
+        fun retryTimeoutHits(): Int = retryTimeoutCounter.get()
+
         fun resetImageHits() {
             imageCounter.set(0)
+        }
+
+        fun resetRetryTimeoutHits() {
+            retryTimeoutCounter.set(0)
         }
 
         override fun close() {
@@ -360,6 +389,31 @@ class BrowserFetchersTest {
             server.createContext("/idle-data") { exchange ->
                 Thread.sleep(300)
                 respond(exchange, 200, "idle-ready")
+            }
+            server.createContext("/wait-page") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <div id="wait-result">loading</div>
+                        <script>
+                          setTimeout(() => {
+                            document.getElementById('wait-result').textContent = 'wait-ready';
+                          }, 150);
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/retry-timeout") { exchange ->
+                val attempt = retryTimeoutCounter.incrementAndGet()
+                if (attempt == 1) {
+                    Thread.sleep(400)
+                }
+                respond(exchange, 200, "<html><body><h1>retry-recovered</h1></body></html>")
             }
             server.createContext("/assets/pixel.png") { exchange ->
                 imageCounter.incrementAndGet()
@@ -480,9 +534,8 @@ class BrowserFetchersTest {
 
         companion object {
             fun start(): BrowserTestServer {
-                val counter = AtomicInteger(0)
                 val httpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-                val server = BrowserTestServer(httpServer, counter)
+                val server = BrowserTestServer(httpServer, AtomicInteger(0), AtomicInteger(0))
                 server.registerContexts()
                 httpServer.start()
                 return server

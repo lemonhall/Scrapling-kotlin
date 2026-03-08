@@ -36,63 +36,86 @@ open class DynamicSession(
     fun fetch(url: String, options: BrowserFetchOptions = defaultOptions): Response {
         check(isOpen) { "DynamicSession must be opened before fetch." }
         val activeContext = context ?: error("Browser context is not initialized.")
-        val page = pagePool.acquirePage(activeContext::newPage)
-        var blockedRequests = 0
-        var continuedRequests = 0
-        var reusable = true
+        var lastError: Exception? = null
 
-        try {
-            preparePage(page)
-            applyCookies(activeContext, options)
-            page.setExtraHTTPHeaders(options.extraHeaders)
-            if (options.disableResources || options.blockedDomains.isNotEmpty()) {
-                page.route(
-                    "**/*",
-                    BrowserRouting.createRouteHandler(
-                        disableResources = options.disableResources,
-                        blockedDomains = options.blockedDomains,
-                        onBlocked = { blockedRequests += 1 },
-                        onContinued = { continuedRequests += 1 },
+        repeat(options.retries.coerceAtLeast(1)) { attemptIndex ->
+            val page = pagePool.acquirePage(activeContext::newPage)
+            var blockedRequests = 0
+            var continuedRequests = 0
+            var reusable = true
+
+            try {
+                val effectiveTimeout = if (options.solveCloudflare) {
+                    maxOf(options.timeout, 60_000.0)
+                } else {
+                    options.timeout
+                }
+
+                preparePage(page, effectiveTimeout)
+                applyCookies(activeContext, options)
+                page.setExtraHTTPHeaders(options.extraHeaders)
+                if (options.disableResources || options.blockedDomains.isNotEmpty()) {
+                    page.route(
+                        "**/*",
+                        BrowserRouting.createRouteHandler(
+                            disableResources = options.disableResources,
+                            blockedDomains = options.blockedDomains,
+                            onBlocked = { blockedRequests += 1 },
+                            onContinued = { continuedRequests += 1 },
+                        ),
+                    )
+                }
+
+                val response = page.navigate(url, Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD))
+                if (options.loadDom) {
+                    page.waitForLoadState(LoadState.DOMCONTENTLOADED)
+                }
+                if (options.networkIdle) {
+                    page.waitForLoadState(
+                        LoadState.NETWORKIDLE,
+                        Page.WaitForLoadStateOptions().setTimeout(effectiveTimeout),
+                    )
+                }
+                if (options.solveCloudflare) {
+                    CloudflareSolver.solve(page)
+                }
+                options.pageAction?.invoke(page)
+                val waitMillis = options.wait ?: options.waitForMillis ?: 0.0
+                if (waitMillis > 0) {
+                    page.waitForTimeout(waitMillis)
+                }
+                options.waitSelector?.let { selector ->
+                    page.waitForSelector(
+                        selector,
+                        Page.WaitForSelectorOptions().setState(options.waitSelectorState.toPlaywright()),
+                    )
+                }
+
+                return BrowserResponseFactory.fromPage(
+                    page = page,
+                    playwrightResponse = response,
+                    requestHeaders = options.extraHeaders,
+                    routeStats = BrowserRouteStats(
+                        blockedRequests = blockedRequests,
+                        continuedRequests = continuedRequests,
                     ),
                 )
-            }
-
-            val response = page.navigate(url, Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD))
-
-            if (options.networkIdle) {
-                page.waitForLoadState(LoadState.NETWORKIDLE)
-            }
-            if (options.solveCloudflare) {
-                CloudflareSolver.solve(page)
-            }
-            options.pageAction?.invoke(page)
-            options.waitForMillis?.let(page::waitForTimeout)
-            options.waitSelector?.let { selector ->
-                page.waitForSelector(
-                    selector,
-                    Page.WaitForSelectorOptions().setState(options.waitSelectorState.toPlaywright()),
-                )
-            }
-
-            return BrowserResponseFactory.fromPage(
-                page = page,
-                playwrightResponse = response,
-                requestHeaders = options.extraHeaders,
-                routeStats = BrowserRouteStats(
-                    blockedRequests = blockedRequests,
-                    continuedRequests = continuedRequests,
-                ),
-            )
-        } catch (error: Exception) {
-            reusable = false
-            throw error
-        } finally {
-            if (reusable && cleanupReusablePage(page)) {
-                pagePool.releasePage(page)
-            } else {
-                pagePool.discardPage(page)
+            } catch (error: Exception) {
+                lastError = error
+                reusable = false
+                if (attemptIndex < options.retries.coerceAtLeast(1) - 1 && options.retryDelay > 0) {
+                    Thread.sleep(options.retryDelay.toLong())
+                }
+            } finally {
+                if (reusable && cleanupReusablePage(page)) {
+                    pagePool.releasePage(page)
+                } else {
+                    pagePool.discardPage(page)
+                }
             }
         }
+
+        throw lastError ?: IllegalStateException("Browser fetch failed without an exception.")
     }
 
     fun getPoolStats(): Map<String, Int> = mapOf(
@@ -126,9 +149,11 @@ open class DynamicSession(
         })
     }
 
-    private fun preparePage(page: Page) {
+    private fun preparePage(page: Page, timeout: Double) {
         page.unrouteAll()
         page.setExtraHTTPHeaders(emptyMap())
+        page.setDefaultNavigationTimeout(timeout)
+        page.setDefaultTimeout(timeout)
     }
 
     private fun cleanupReusablePage(page: Page): Boolean = try {
