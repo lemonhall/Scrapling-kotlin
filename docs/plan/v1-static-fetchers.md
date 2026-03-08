@@ -49,7 +49,8 @@
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersJdkTransportTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`、`./gradlew.bat test`。
 - 2026-03-08：已完成 M3 第二刀，新增 `JdkHttpTransport`，并通过本地 `HttpServer` 验证真实 GET/POST/PUT/DELETE、redirect、cookie session reuse。
 - 2026-03-08：已完成 M3 第三刀，补齐 timeout/重试真行为测试，验证超时抛错与重试后恢复成功。
-- 第 3 条反作弊验收已满足；当前剩余差距聚焦在 async、proxy 语义补齐后，再评估是否可将 M3 标记为 done。
+- 2026-03-08：已完成 M3 第四刀，新增 `AsyncHttpTransport`、`AsyncJdkHttpTransport`、`AsyncFetcherClient`、`AsyncFetcherSession`，并通过异步本地 `HttpServer` 测试。
+- 第 3 条反作弊验收已满足；sync/async、headers/cookies/params/proxy/timeout/重试 语义均已落地，M3 DoD 达成。
 
 ## Delivered Slice 1
 
@@ -69,4 +70,10 @@
 
 - timeout/重试验证：使用本地 `HttpServer` 覆盖 `HttpTimeoutException` 与 `retries` 生效路径。
 - `JdkHttpTransport`：当前已确认 timeout 会沿 JDK `HttpClient` 语义抛出，`retries` 会在预算内重试 `IOException`。
+
+## Delivered Slice 4
+
+- `AsyncFetcherClient` / `AsyncFetcherSession`：补齐 async fetcher 公共入口。
+- `AsyncJdkHttpTransport`：基于 JDK `HttpClient.sendAsync(...)` 落地异步 transport。
+- 异步测试：覆盖真实 GET/POST/PUT/DELETE、redirect、cookie session reuse、timeout/重试与 double-open。
 

@@ -6,6 +6,8 @@ data class RequestOptions(
     val headers: Map<String, String> = emptyMap(),
     val cookies: Map<String, String> = emptyMap(),
     val params: Map<String, String> = emptyMap(),
+    val proxies: Map<String, String> = emptyMap(),
+    val proxy: String? = null,
     val timeout: Int? = 30,
     val retries: Int = 3,
     val followRedirects: Boolean = true,

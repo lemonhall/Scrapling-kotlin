@@ -16,8 +16,8 @@
 - `M0 Foundation`：done
 - `M1 Parser Baseline`：done
 - `M2 Parser Advanced`：done
-- `M3 Static Fetchers`：in progress
-- `M3 Static Fetchers`：stub transport + 真实 JDK transport + timeout/重试 已落地；async/proxy 仍待补齐
+- `M3 Static Fetchers`：done
+- `M3 Static Fetchers`：sync/async + proxy + timeout/重试 已落地；下一里程碑为 `M4 Browser Fetchers`
 
 ## Default Workflow
 

@@ -14,15 +14,20 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
-class JdkHttpTransport(
+class AsyncJdkHttpTransport(
     cookieManager: CookieManager? = null,
-) : HttpTransport {
+) : AsyncHttpTransport {
     private val sharedCookieManager = cookieManager
     private val redirectingClient = newClient(HttpClient.Redirect.NORMAL)
     private val nonRedirectingClient = newClient(HttpClient.Redirect.NEVER)
 
-    override fun request(method: String, url: String, options: RequestOptions): RawHttpResponse {
+    override suspend fun request(method: String, url: String, options: RequestOptions): RawHttpResponse {
         var attempt = 0
         var lastFailure: IOException? = null
         val retries = options.retries.coerceAtLeast(0)
@@ -42,11 +47,13 @@ class JdkHttpTransport(
         throw checkNotNull(lastFailure)
     }
 
-    private fun execute(method: String, url: String, options: RequestOptions): RawHttpResponse {
+    private suspend fun execute(method: String, url: String, options: RequestOptions): RawHttpResponse {
         val requestHeaders = mergeRequestHeaders(options)
         val request = buildRequest(method, url, options, requestHeaders)
         val proxyUrl = resolveProxy(url, options)
-        val response = httpClient(options.followRedirects, proxyUrl).send(request, HttpResponse.BodyHandlers.ofByteArray())
+        val response = httpClient(options.followRedirects, proxyUrl)
+            .sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+            .await()
 
         return RawHttpResponse(
             url = response.uri().toString(),
@@ -177,9 +184,26 @@ class JdkHttpTransport(
 
     private fun reasonPhrase(status: Int): String = STATUS_REASONS[status] ?: ""
 
+    private suspend fun <T> CompletableFuture<T>.await(): T =
+        suspendCancellableCoroutine { continuation ->
+            whenComplete { result, throwable ->
+                if (throwable == null) {
+                    continuation.resume(result)
+                } else {
+                    val cause = if (throwable is CompletionException && throwable.cause != null) {
+                        throwable.cause!!
+                    } else {
+                        throwable
+                    }
+                    continuation.resumeWithException(cause)
+                }
+            }
+            continuation.invokeOnCancellation { cancel(true) }
+        }
+
     companion object {
-        val sessionTransport: JdkHttpTransport
-            get() = JdkHttpTransport(CookieManager(null, CookiePolicy.ACCEPT_ALL))
+        val sessionTransport: AsyncJdkHttpTransport
+            get() = AsyncJdkHttpTransport(CookieManager(null, CookiePolicy.ACCEPT_ALL))
 
         private const val DEFAULT_USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"

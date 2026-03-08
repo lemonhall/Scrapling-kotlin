@@ -3,16 +3,17 @@ package io.github.d4vinci.scrapling.fetchers.static
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
+import java.net.http.HttpTimeoutException
+import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import java.net.http.HttpTimeoutException
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class StaticFetchersJdkTransportTest {
+class AsyncStaticFetchersTest {
     private lateinit var server: LocalTestServer
 
     @BeforeTest
@@ -26,8 +27,8 @@ class StaticFetchersJdkTransportTest {
     }
 
     @Test
-    fun fetcherClientUsesRealHttpTransportForGetRequests() {
-        val client = FetcherClient()
+    fun asyncFetcherClientUsesRealHttpTransportForGetRequests() = runTest {
+        val client = AsyncFetcherClient()
 
         val response = client.get(
             server.url("/html"),
@@ -50,43 +51,13 @@ class StaticFetchersJdkTransportTest {
     }
 
     @Test
-    fun fetcherClientUsesRealHttpTransportForBodyMethodsAndRedirects() {
-        val client = FetcherClient()
-
-        val postResponse = client.post(server.url("/submit"), data = mapOf("key" to "value"))
-        val putResponse = client.put(server.url("/submit"), data = mapOf("mode" to "replace"))
-        val deleteResponse = client.delete(server.url("/delete"))
-        val redirected = client.get(server.url("/redirect"))
-        val notRedirected = client.get(server.url("/redirect"), RequestOptions(followRedirects = false))
-
-        assertEquals(200, postResponse.status)
-        assertEquals(200, putResponse.status)
-        assertEquals(204, deleteResponse.status)
-        assertEquals(200, redirected.status)
-        assertEquals(server.url("/final"), redirected.url)
-        assertEquals(302, notRedirected.status)
-
-        val postRequest = server.lastRequest("/submit", "POST")
-        assertNotNull(postRequest)
-        assertEquals("key=value", postRequest.body)
-
-        val putRequest = server.lastRequest("/submit", "PUT")
-        assertNotNull(putRequest)
-        assertEquals("mode=replace", putRequest.body)
-
-        val deleteRequest = server.lastRequest("/delete")
-        assertNotNull(deleteRequest)
-        assertEquals("DELETE", deleteRequest.method)
-    }
-
-    @Test
-    fun fetcherClientRoutesRequestsThroughConfiguredProxy() {
+    fun asyncFetcherClientRoutesRequestsThroughConfiguredProxy() = runTest {
         val proxy = RecordingProxyServer.start()
         try {
-            val client = FetcherClient()
+            val client = AsyncFetcherClient()
             val response = client.get(
                 "http://example.test/proxied",
-                RequestOptions(proxy = proxy.proxyUrl()),
+                RequestOptions(proxies = mapOf("http" to proxy.proxyUrl())),
             )
 
             assertEquals(200, response.status)
@@ -101,35 +72,39 @@ class StaticFetchersJdkTransportTest {
     }
 
     @Test
-    fun fetcherClientRetriesTimedOutRequestsWhenRetryBudgetExists() {
-        val client = FetcherClient()
+    fun asyncFetcherClientSupportsBodyMethodsRedirectsAndTimeoutRetry() = runTest {
+        val client = AsyncFetcherClient()
 
-        val response = client.get(
-            server.url("/flaky-timeout"),
-            RequestOptions(timeout = 1, retries = 1),
-        )
+        val postResponse = client.post(server.url("/submit"), data = mapOf("key" to "value"))
+        val putResponse = client.put(server.url("/submit"), data = mapOf("mode" to "replace"))
+        val deleteResponse = client.delete(server.url("/delete"))
+        val redirected = client.get(server.url("/redirect"))
+        val retried = client.get(server.url("/flaky-timeout"), RequestOptions(timeout = 1, retries = 1))
 
-        assertEquals(200, response.status)
-        assertEquals("attempt-2", response.css("h1::text").get()?.value)
+        assertEquals(200, postResponse.status)
+        assertEquals(200, putResponse.status)
+        assertEquals(204, deleteResponse.status)
+        assertEquals(200, redirected.status)
+        assertEquals(server.url("/final"), redirected.url)
+        assertEquals(200, retried.status)
+        assertEquals("attempt-2", retried.css("h1::text").get()?.value)
         assertEquals(2, server.requestCount("/flaky-timeout"))
-    }
 
-    @Test
-    fun fetcherClientSurfacesTimeoutWhenRetryBudgetIsExhausted() {
-        val client = FetcherClient()
+        val postRequest = server.lastRequest("/submit", "POST")
+        assertNotNull(postRequest)
+        assertEquals("key=value", postRequest.body)
 
         assertFailsWith<HttpTimeoutException> {
-            client.get(
-                server.url("/slow"),
-                RequestOptions(timeout = 1, retries = 0),
-            )
+            client.get(server.url("/slow"), RequestOptions(timeout = 1, retries = 0))
         }
     }
 
     @Test
-    fun fetcherSessionReusesCookiesAcrossRealRequests() {
-        val session = FetcherSession(timeout = 45, retries = 5)
+    fun asyncFetcherSessionReusesCookiesAcrossRealRequestsAndRejectsDoubleOpen() = runTest {
+        val session = AsyncFetcherSession(timeout = 45, retries = 5)
         session.open()
+        assertFailsWith<RuntimeException> { session.open() }
+
         try {
             val first = session.get(server.url("/set-cookie"))
             val second = session.get(server.url("/echo-cookie"))
