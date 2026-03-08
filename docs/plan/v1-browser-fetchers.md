@@ -48,7 +48,7 @@
 - 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
 - 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
-- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/loadDom/wait/retries/retryDelay` 的真实测试；但对照上游参数模型，`proxy/proxy_rotator`、`google_search` referer、`init_script/user_data_dir/cdp_url/additional_args/extra_flags/selector_config` 仍待补齐。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/loadDom/wait/retries/retryDelay`、`google_search` referer、`init_script/user_data_dir/cdp_url/extra_flags/additionalArgs/selectorConfig` 的真实测试；但对照上游参数模型，`proxy/proxy_rotator` 仍待补齐。
 
 ## Delivered Slice 1
 
@@ -102,8 +102,14 @@
 - `DynamicSession.fetch()`：新增超时设置、按次数重试与重试间隔，失败请求会丢弃当前 page，成功请求仍会回收到 ready pool，避免错误 page 污染后续请求。
 - 测试：新增 `wait` 别名与超时重试回归测试；`/retry-timeout` 首次超时、二次恢复，`/wait-page` 验证返回前等待脚本收敛；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过。
 
+## Delivered Slice 9
+
+- `BrowserFetchOptions`：补齐 `googleSearch`、`initScript`、`userDataDir`、`cdpUrl`、`extraFlags`、`additionalArgs`、`selectorConfig`。
+- `BrowserSession.open()`：新增三种打开路径——普通 launch、`launchPersistentContext(userDataDir)`、`connectOverCDP(cdpUrl)`；并补齐 `cdpUrl` 语法校验。
+- `BrowserLaunchSupport`：支持 `extraFlags`，并把 `additionalArgs` 的 viewport / permissions / ignoreHttpsErrors 子集映射到 context options。
+- 导航与响应：当开启 `googleSearch` 且未显式提供 referer 时，会自动注入 Google referer；浏览器 response 现会透传 `selectorConfig` 到解析层。
+- 测试：新增 `init script`、Google referer、`selectorConfig`、`userDataDir` 持久化、`cdpUrl` 校验、`extraFlags`、`additionalArgs(viewport)` 回归测试；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-09 通过。
+
 ## Remaining Parity Gaps
 
 - 连接能力：`proxy` / `proxy_rotator` 仍未接入浏览器 fetch 流程。
-- 启动/上下文：`init_script`、`user_data_dir`、`cdp_url`、`additional_args`、`extra_flags` 仍待补齐。
-- 导航/响应：`google_search` referer、`selector_config` 与更完整的 response 捕获语义仍待补齐。

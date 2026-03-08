@@ -45,4 +45,15 @@ class BrowserLaunchSupportTest {
         assertContains(launchOptions.args!!, "--no-first-run")
         assertContains(launchOptions.ignoreDefaultArgs!!, "--enable-automation")
     }
+
+    @Test
+    fun launchOptionsIncludeExtraFlags() {
+        val launchOptions = BrowserLaunchSupport.launchOptions(
+            options = BrowserFetchOptions(extraFlags = listOf("--proxy-bypass-list=<-loopback>")),
+            stealth = false,
+        )
+
+        assertNotNull(launchOptions.args)
+        assertContains(launchOptions.args!!, "--proxy-bypass-list=<-loopback>")
+    }
 }

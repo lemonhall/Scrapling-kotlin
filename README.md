@@ -35,6 +35,7 @@
 - M4 第六刀已落地：真实 page reuse / pool ready-state 已落地，`fetch()` 级 cookies 也已接入；当前剩余 Cloudflare 求解
 - M4 第七刀已落地：Cloudflare 基础求解 flow 已落地；但 M4 仍剩 `timeout/load_dom/wait`、`proxy/retries`、`init_script/user_data_dir/cdp_url` 等参数级对齐工作
 - M4 第八刀已落地：`timeout` / `wait` / `retries` / `retryDelay` 已接入浏览器 fetch 流程；当前主要剩余 `proxy/proxy_rotator`、`init_script/user_data_dir/cdp_url`、`google_search` / `selector_config`
+- M4 第九刀已落地：`googleSearch`、`initScript`、`userDataDir`、`cdpUrl`、`extraFlags`、`additionalArgs`、`selectorConfig` 已接入；当前 M4 主要只剩 `proxy/proxy_rotator`
 
 ## 快速命令
 

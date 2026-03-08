@@ -8,6 +8,7 @@ import com.microsoft.playwright.options.Cookie
 import com.microsoft.playwright.options.LoadState
 import com.microsoft.playwright.options.WaitUntilState
 import io.github.d4vinci.scrapling.fetchers.static.Response
+import java.nio.file.Path
 
 open class DynamicSession(
     private val defaultOptions: BrowserFetchOptions = BrowserFetchOptions(),
@@ -27,8 +28,29 @@ open class DynamicSession(
         check(!isOpen) { "DynamicSession is already open." }
 
         playwright = Playwright.create()
-        browser = playwright!!.chromium().launch(BrowserLaunchSupport.launchOptions(defaultOptions, stealth))
-        context = newContext(defaultOptions)
+        val browserType = playwright!!.chromium()
+        context = when {
+            !defaultOptions.cdpUrl.isNullOrBlank() -> {
+                BrowserLaunchSupport.validateCdpUrl(defaultOptions.cdpUrl)
+                browser = browserType.connectOverCDP(defaultOptions.cdpUrl)
+                browser!!.contexts().firstOrNull() ?: browser!!.newContext(BrowserLaunchSupport.newContextOptions(defaultOptions))
+            }
+
+            !defaultOptions.userDataDir.isNullOrBlank() -> {
+                val persistentContext = browserType.launchPersistentContext(
+                    Path.of(defaultOptions.userDataDir),
+                    BrowserLaunchSupport.persistentContextOptions(defaultOptions, stealth),
+                )
+                browser = persistentContext.browser()
+                persistentContext
+            }
+
+            else -> {
+                browser = browserType.launch(BrowserLaunchSupport.launchOptions(defaultOptions, stealth))
+                newContext(defaultOptions)
+            }
+        }
+        applyContextDecorations(context ?: error("Browser context is not initialized."), defaultOptions)
         isOpen = true
         return this
     }
@@ -53,7 +75,8 @@ open class DynamicSession(
 
                 preparePage(page, effectiveTimeout)
                 applyCookies(activeContext, options)
-                page.setExtraHTTPHeaders(options.extraHeaders)
+                val effectiveHeaders = effectiveHeaders(url, options)
+                page.setExtraHTTPHeaders(effectiveHeaders)
                 if (options.disableResources || options.blockedDomains.isNotEmpty()) {
                     page.route(
                         "**/*",
@@ -66,7 +89,9 @@ open class DynamicSession(
                     )
                 }
 
-                val response = page.navigate(url, Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD))
+                val navigateOptions = Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD)
+                effectiveHeaders["Referer"]?.let(navigateOptions::setReferer)
+                val response = page.navigate(url, navigateOptions)
                 if (options.loadDom) {
                     page.waitForLoadState(LoadState.DOMCONTENTLOADED)
                 }
@@ -94,11 +119,12 @@ open class DynamicSession(
                 return BrowserResponseFactory.fromPage(
                     page = page,
                     playwrightResponse = response,
-                    requestHeaders = options.extraHeaders,
+                    requestHeaders = effectiveHeaders,
                     routeStats = BrowserRouteStats(
                         blockedRequests = blockedRequests,
                         continuedRequests = continuedRequests,
                     ),
+                    selectorConfig = options.selectorConfig,
                 )
             } catch (error: Exception) {
                 lastError = error
@@ -126,16 +152,13 @@ open class DynamicSession(
 
     protected open fun newContext(options: BrowserFetchOptions): BrowserContext {
         val activeBrowser = browser ?: error("Browser is not initialized.")
-        val context = activeBrowser.newContext(
-            Browser.NewContextOptions()
-                .setLocale(options.locale)
-                .setTimezoneId(options.timezoneId)
-                .setUserAgent(options.userAgent),
-        )
+        return activeBrowser.newContext(BrowserLaunchSupport.newContextOptions(options))
+    }
 
+    private fun applyContextDecorations(context: BrowserContext, options: BrowserFetchOptions) {
         applyCookies(context, options)
+        options.initScript?.let { context.addInitScript(Path.of(it)) }
         BrowserStealth.initScript(options, stealth)?.let(context::addInitScript)
-        return context
     }
 
     private fun applyCookies(context: BrowserContext, options: BrowserFetchOptions) {
@@ -169,13 +192,24 @@ open class DynamicSession(
 
     override fun close() {
         pagePool.closeAll()
-        context?.close()
-        browser?.close()
+        runCatching { context?.close() }
+        runCatching { browser?.close() }
         playwright?.close()
         context = null
         browser = null
         playwright = null
         isOpen = false
+    }
+
+    private fun effectiveHeaders(
+        url: String,
+        options: BrowserFetchOptions,
+    ): Map<String, String> {
+        val headers = options.extraHeaders.toMutableMap()
+        if (options.googleSearch && headers.keys.none { it.equals("referer", ignoreCase = true) }) {
+            headers["Referer"] = BrowserLaunchSupport.googleReferer(url)
+        }
+        return headers
     }
 }
 

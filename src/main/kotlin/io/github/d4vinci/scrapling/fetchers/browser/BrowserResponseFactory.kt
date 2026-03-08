@@ -11,6 +11,7 @@ internal object BrowserResponseFactory {
         playwrightResponse: PlaywrightResponse?,
         requestHeaders: Map<String, String>,
         routeStats: BrowserRouteStats,
+        selectorConfig: SelectorConfig,
     ): Response {
         val url = page.url()
         val html = page.content().encodeToByteArray()
@@ -29,7 +30,7 @@ internal object BrowserResponseFactory {
                 "blockedRequests" to routeStats.blockedRequests,
                 "continuedRequests" to routeStats.continuedRequests,
             ),
-            selectorConfig = SelectorConfig(url = url),
+            selectorConfig = selectorConfig.copy(url = selectorConfig.url.ifBlank { url }),
         )
     }
 }

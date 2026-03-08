@@ -3,7 +3,9 @@ package io.github.d4vinci.scrapling.fetchers.browser
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
+import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
+import io.github.d4vinci.scrapling.fetchers.static.SelectorConfig
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -102,6 +104,75 @@ class BrowserFetchersTest {
         assertEquals("wait-ready", waitResponse.css("#wait-result::text").get()?.value)
         assertEquals("retry-recovered", retryResponse.css("h1::text").get()?.value)
         assertEquals(2, server.retryTimeoutHits())
+    }
+
+    @Test
+    fun dynamicFetcherSupportsInitScriptGoogleRefererAndSelectorConfig() {
+        val initScript = Files.createTempFile("scrapling-browser-init", ".js")
+        try {
+            Files.writeString(initScript, "window.__SCRAPLING_INIT='ready';")
+            val response = DynamicFetcher.fetch(
+                server.url("/context-check"),
+                BrowserFetchOptions(
+                    initScript = initScript.toString(),
+                    googleSearch = true,
+                    selectorConfig = SelectorConfig(adaptiveDomain = "https://override.example"),
+                ),
+            )
+
+            assertEquals("ready", response.css("#init::text").get()?.value)
+            assertTrue((response.css("#referer::text").get()?.value ?: "").contains("google"))
+            assertEquals("https://override.example", response.css("h1").first()?.url)
+        } finally {
+            Files.deleteIfExists(initScript)
+        }
+    }
+
+    @Test
+    fun dynamicFetcherSupportsPersistentUserDataDir() {
+        val userDataDir = Files.createTempDirectory("scrapling-browser-profile")
+        try {
+            DynamicFetcher.fetch(
+                server.url("/storage-page"),
+                BrowserFetchOptions(
+                    userDataDir = userDataDir.toString(),
+                    pageAction = { page -> page.evaluate("localStorage.setItem('persisted', 'yes')") },
+                ),
+            )
+
+            val response = DynamicFetcher.fetch(
+                server.url("/storage-page"),
+                BrowserFetchOptions(
+                    userDataDir = userDataDir.toString(),
+                    waitSelector = "#storage",
+                    waitSelectorState = WaitSelectorStateValue.VISIBLE,
+                ),
+            )
+
+            assertEquals("yes", response.css("#storage::text").get()?.value)
+        } finally {
+            userDataDir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun dynamicFetcherSupportsAdditionalContextArgsViewport() {
+        val response = DynamicFetcher.fetch(
+            server.url("/viewport-check"),
+            BrowserFetchOptions(additionalArgs = mapOf("viewportWidth" to 700, "viewportHeight" to 500)),
+        )
+
+        assertEquals("700x500", response.css("#viewport::text").get()?.value)
+    }
+
+    @Test
+    fun dynamicFetcherRejectsInvalidCdpUrl() {
+        assertFailsWith<IllegalArgumentException> {
+            DynamicFetcher.fetch(server.url("/basic"), BrowserFetchOptions(cdpUrl = "blahblah"))
+        }
+        assertFailsWith<Exception> {
+            DynamicFetcher.fetch(server.url("/basic"), BrowserFetchOptions(cdpUrl = "ws://blahblah"))
+        }
     }
 
     @Test
@@ -414,6 +485,57 @@ class BrowserFetchersTest {
                     Thread.sleep(400)
                 }
                 respond(exchange, 200, "<html><body><h1>retry-recovered</h1></body></html>")
+            }
+            server.createContext("/context-check") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <h1>context</h1>
+                        <div id="init"></div>
+                        <div id="referer"></div>
+                        <script>
+                          document.getElementById('init').textContent = window.__SCRAPLING_INIT || 'missing';
+                          document.getElementById('referer').textContent = document.referrer || 'missing';
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/storage-page") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <div id="storage"></div>
+                        <script>
+                          document.getElementById('storage').textContent = localStorage.getItem('persisted') || 'missing';
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/viewport-check") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <div id="viewport"></div>
+                        <script>
+                          document.getElementById('viewport').textContent = `${'$'}{window.innerWidth}x${'$'}{window.innerHeight}`;
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
             }
             server.createContext("/assets/pixel.png") { exchange ->
                 imageCounter.incrementAndGet()

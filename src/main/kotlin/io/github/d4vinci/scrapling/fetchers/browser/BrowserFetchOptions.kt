@@ -2,6 +2,7 @@ package io.github.d4vinci.scrapling.fetchers.browser
 
 import com.microsoft.playwright.options.WaitForSelectorState
 import com.microsoft.playwright.Page
+import io.github.d4vinci.scrapling.fetchers.static.SelectorConfig
 
 data class BrowserFetchOptions(
     val headless: Boolean = true,
@@ -18,11 +19,18 @@ data class BrowserFetchOptions(
     val waitForMillis: Double? = null,
     val networkIdle: Boolean = false,
     val solveCloudflare: Boolean = false,
+    val googleSearch: Boolean = false,
     val extraHeaders: Map<String, String> = emptyMap(),
     val cookies: List<BrowserCookie> = emptyList(),
     val locale: String? = null,
     val timezoneId: String? = null,
     val userAgent: String? = null,
+    val initScript: String? = null,
+    val userDataDir: String? = null,
+    val cdpUrl: String? = null,
+    val extraFlags: List<String> = emptyList(),
+    val additionalArgs: Map<String, Any?> = emptyMap(),
+    val selectorConfig: SelectorConfig = SelectorConfig(),
     val realChrome: Boolean = false,
     val hideCanvas: Boolean = false,
     val blockWebRtc: Boolean = false,

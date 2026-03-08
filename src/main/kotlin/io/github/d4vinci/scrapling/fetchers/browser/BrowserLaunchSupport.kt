@@ -1,6 +1,8 @@
 package io.github.d4vinci.scrapling.fetchers.browser
 
+import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserType
+import java.net.URI
 
 internal object BrowserLaunchSupport {
     private val harmfulArgs = listOf(
@@ -87,29 +89,100 @@ internal object BrowserLaunchSupport {
         options: BrowserFetchOptions,
         stealth: Boolean,
     ): BrowserType.LaunchOptions {
-        val args = buildList {
-            addAll(defaultArgs)
-            if (stealth) {
-                addAll(stealthArgs)
-            }
-            if (options.blockWebRtc) {
-                add("--webrtc-ip-handling-policy=disable_non_proxied_udp")
-                add("--force-webrtc-ip-handling-policy")
-            }
-            if (!options.allowWebgl) {
-                add("--disable-webgl")
-                add("--disable-webgl-image-chromium")
-                add("--disable-webgl2")
-            }
-            if (options.hideCanvas) {
-                add("--fingerprinting-canvas-image-data-noise")
-            }
-        }.distinct()
+        val args = launchArgs(options, stealth)
 
         return BrowserType.LaunchOptions()
             .setHeadless(options.headless)
             .setChannel(if (options.realChrome) "chrome" else "chromium")
             .setArgs(args)
             .setIgnoreDefaultArgs(harmfulArgs)
+    }
+
+    fun persistentContextOptions(
+        options: BrowserFetchOptions,
+        stealth: Boolean,
+    ): BrowserType.LaunchPersistentContextOptions = BrowserType.LaunchPersistentContextOptions()
+        .setHeadless(options.headless)
+        .setChannel(if (options.realChrome) "chrome" else "chromium")
+        .setArgs(launchArgs(options, stealth))
+        .setIgnoreDefaultArgs(harmfulArgs)
+        .setLocale(options.locale)
+        .setTimezoneId(options.timezoneId)
+        .setUserAgent(options.userAgent)
+        .also { applyAdditionalArgs(it, options.additionalArgs) }
+
+    fun newContextOptions(options: BrowserFetchOptions): Browser.NewContextOptions = Browser.NewContextOptions()
+        .setLocale(options.locale)
+        .setTimezoneId(options.timezoneId)
+        .setUserAgent(options.userAgent)
+        .also { applyAdditionalArgs(it, options.additionalArgs) }
+
+    fun validateCdpUrl(cdpUrl: String) {
+        require(cdpUrl.startsWith("ws://") || cdpUrl.startsWith("wss://")) {
+            "CDP URL must use 'ws://' or 'wss://' scheme."
+        }
+        require(!runCatching { URI(cdpUrl) }.getOrNull()?.host.isNullOrBlank()) {
+            "Invalid hostname for the CDP URL."
+        }
+    }
+
+    fun googleReferer(url: String): String {
+        val host = runCatching { URI(url).host }.getOrNull().orEmpty().ifBlank { url }
+        return "https://www.google.com/search?q=$host"
+    }
+
+    private fun launchArgs(
+        options: BrowserFetchOptions,
+        stealth: Boolean,
+    ): List<String> = buildList {
+        addAll(defaultArgs)
+        if (stealth) {
+            addAll(stealthArgs)
+        }
+        addAll(options.extraFlags)
+        if (options.blockWebRtc) {
+            add("--webrtc-ip-handling-policy=disable_non_proxied_udp")
+            add("--force-webrtc-ip-handling-policy")
+        }
+        if (!options.allowWebgl) {
+            add("--disable-webgl")
+            add("--disable-webgl-image-chromium")
+            add("--disable-webgl2")
+        }
+        if (options.hideCanvas) {
+            add("--fingerprinting-canvas-image-data-noise")
+        }
+    }.distinct()
+
+    private fun applyAdditionalArgs(
+        target: Browser.NewContextOptions,
+        additionalArgs: Map<String, Any?>,
+    ) {
+        val width = (additionalArgs["viewportWidth"] as? Number)?.toInt()
+        val height = (additionalArgs["viewportHeight"] as? Number)?.toInt()
+        if (width != null && height != null) {
+            target.setViewportSize(width, height)
+        }
+        (additionalArgs["ignoreHttpsErrors"] as? Boolean)?.let(target::setIgnoreHTTPSErrors)
+        (additionalArgs["permissions"] as? List<*>)
+            ?.filterIsInstance<String>()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let(target::setPermissions)
+    }
+
+    private fun applyAdditionalArgs(
+        target: BrowserType.LaunchPersistentContextOptions,
+        additionalArgs: Map<String, Any?>,
+    ) {
+        val width = (additionalArgs["viewportWidth"] as? Number)?.toInt()
+        val height = (additionalArgs["viewportHeight"] as? Number)?.toInt()
+        if (width != null && height != null) {
+            target.setViewportSize(width, height)
+        }
+        (additionalArgs["ignoreHttpsErrors"] as? Boolean)?.let(target::setIgnoreHTTPSErrors)
+        (additionalArgs["permissions"] as? List<*>)
+            ?.filterIsInstance<String>()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let(target::setPermissions)
     }
 }
