@@ -3,7 +3,6 @@ package io.github.d4vinci.scrapling.spiders
 import io.github.d4vinci.scrapling.fetchers.static.Response
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
@@ -132,6 +131,10 @@ abstract class Spider(
     open suspend fun onStart(resuming: Boolean) = Unit
 
     open suspend fun onClose() = Unit
+
+    open suspend fun onError(request: Request, error: Exception) = Unit
+
+    open suspend fun onScrapedItem(item: Map<String, Any?>): Map<String, Any?>? = item
 
     open suspend fun isBlocked(response: Response): Boolean = response.status in BLOCKED_CODES
 

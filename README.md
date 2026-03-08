@@ -16,7 +16,7 @@
 - `M2 Parser Advanced`：已完成
 - `M3 Static Fetchers`：已完成
 - `M4 Browser Fetchers`：已完成
-- `M5 Spiders`：进行中
+- `M5 Spiders`：已完成
 
 已落地内容：
 
@@ -38,7 +38,7 @@
 - M4 第八刀已落地：`timeout` / `wait` / `retries` / `retryDelay` 已接入浏览器 fetch 流程；当前主要剩余 `proxy/proxy_rotator`、`init_script/user_data_dir/cdp_url`、`google_search` / `selector_config`
 - M4 第九刀已落地：`googleSearch`、`initScript`、`userDataDir`、`cdpUrl`、`extraFlags`、`additionalArgs`、`selectorConfig` 已接入；当前 M4 主要只剩 `proxy/proxy_rotator`
 - M4 第十刀已落地：`proxy` / `proxyRotator`、静态代理覆盖、按请求轮转代理、Playwright 代理模型映射与冲突校验已接入；`BrowserFetchersTest` / `BrowserProxySupportTest` 已完成真实回归，M4 DoD 达成
-- M5 第二刀已落地：`dump()` 与 `CrawlerEngine` 基础执行语义已补齐，覆盖初始化状态、allowed domains、rate limiter、request normalize、pause/checkpoint、基础 crawl 统计；`CrawlerEngineTest` 已加入并通过，当前剩余真实并发调度、blocked retry、item/stream 完整闭环
+- M5 第三刀已落地：真实并发 crawl、`processRequest/taskWrapper`、blocked retry、item store / stream 分流、pause + checkpoint 闭环已补齐；`spiders` 测试与全量测试均已通过，M5 DoD 达成
 
 ## 快速命令
 

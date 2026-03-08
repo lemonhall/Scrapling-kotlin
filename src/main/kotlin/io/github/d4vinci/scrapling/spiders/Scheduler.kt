@@ -16,37 +16,38 @@ class Scheduler(
     private val queue = PriorityQueue<QueueEntry>(compareBy<QueueEntry> { it.priority }.thenBy { it.counter })
     private val seen = linkedSetOf<String>()
     private val pending = linkedMapOf<Long, QueueEntry>()
+    private val lock = Any()
     private var counter: Long = 0
 
     val isEmpty: Boolean
-        get() = queue.isEmpty()
+        get() = synchronized(lock) { queue.isEmpty() }
 
-    suspend fun enqueue(request: Request): Boolean {
+    suspend fun enqueue(request: Request): Boolean = synchronized(lock) {
         val fingerprint = request.updateFingerprint(includeKwargs, includeHeaders, keepFragments).toHexString()
         if (!request.dontFilter && fingerprint in seen) {
-            return false
+            return@synchronized false
         }
         seen += fingerprint
         val entry = QueueEntry(priority = -request.priority, counter = counter++, request = request)
         pending[entry.counter] = entry
         queue += entry
-        return true
+        true
     }
 
-    suspend fun dequeue(): Request {
+    suspend fun dequeue(): Request = synchronized(lock) {
         val entry = queue.remove()
         pending.remove(entry.counter)
-        return entry.request
+        entry.request
     }
 
-    fun size(): Int = queue.size
+    fun size(): Int = synchronized(lock) { queue.size }
 
-    fun snapshot(): Pair<List<Request>, Set<String>> {
+    fun snapshot(): Pair<List<Request>, Set<String>> = synchronized(lock) {
         val requests = pending.values.sortedWith(compareBy<QueueEntry> { it.priority }.thenBy { it.counter }).map { it.request }
-        return requests to seen.toSet()
+        requests to seen.toSet()
     }
 
-    fun restore(data: CheckpointData) {
+    fun restore(data: CheckpointData) = synchronized(lock) {
         seen.clear()
         seen.addAll(data.seen)
         queue.clear()

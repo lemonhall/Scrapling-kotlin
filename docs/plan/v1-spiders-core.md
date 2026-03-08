@@ -61,7 +61,15 @@
 - `CrawlerEngineTest`：覆盖 `dump()`、engine init、域名过滤、rate limiter、request normalize、pause/checkpoint 以及基础 crawl 统计。
 - 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` 于 2026-03-09 通过。
 
-## Remaining Gap
+## Delivered Slice 3
 
-- 当前 `CrawlerEngine` 仍是第二刀基础语义实现，尚未完成源项目级别的真实并发调度、response 处理、blocked retry、item/stream 输出与完整 crawl 闭环。
-- `REQ-0001-006` 继续保持 `doing`，直到上述能力与源项目对齐后再转 `done`。
+- `CrawlerEngine`：补齐 `processRequest()` / `taskWrapper()`、真实并发 crawl 主循环、blocked retry、proxy 统计、follow-up request 闭环、item store 与 stream 分流。
+- `Spider`：补齐 `onError()` 与 `onScrapedItem()` 钩子，支持 blocked retry 与 item drop 语义。
+- `Scheduler`：补齐线程安全队列操作，支撑多协程 crawl 调度。
+- `CrawlerEngineTest`：新增真实并发、fetch 失败、blocked retry、offsite follow-up、drop item、stream 模式、pause + checkpoint 等用例。
+- 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` 与 `./gradlew.bat test` 于 2026-03-09 通过；M5 DoD 达成。
+
+## Status
+
+- `REQ-0001-006`：done
+- `M5 Spiders`：done

@@ -20,8 +20,8 @@
 - `M3 Static Fetchers`：sync/async + proxy + timeout/重试 已落地；下一里程碑为 `M4 Browser Fetchers`
 - `M4 Browser Fetchers`：done
 - `M4 Browser Fetchers`：Playwright Java + Chromium sync/async 基线、browser request option 语义测试、stealth launch parity、真实 page reuse、pageAction、Cloudflare 检测与基础求解 flow、`timeout/wait/retries`、`googleSearch/initScript/userDataDir/cdpUrl/extraFlags/additionalArgs/selectorConfig`、`proxy/proxyRotator` 已落地；M4 DoD 已达成
-- `M5 Spiders`：in progress
-- `M5 Spiders`：第二刀已落地 `dump()` 与 `CrawlerEngine` 基础执行语义，覆盖初始化状态、allowed domains、rate limiter、request normalize、pause/checkpoint 与基础 crawl 统计；当前剩余真实并发调度、blocked retry、item/stream 完整闭环
+- `M5 Spiders`：done
+- `M5 Spiders`：第三刀已落地真实并发 crawl、`processRequest/taskWrapper`、blocked retry、item store / stream 分流、pause + checkpoint 闭环；M5 DoD 已达成，下一里程碑为 `M6 CLI + MCP + Docs`
 
 ## Default Workflow
 
