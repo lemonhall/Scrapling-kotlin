@@ -48,7 +48,8 @@
 - 2026-03-08：已完成 M3 首切，新增 `RequestOptions`、`RawHttpResponse`、`HttpTransport`、`Response`、`ResponseFactory`、`FetcherClient`、`FetcherSession`。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersJdkTransportTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`、`./gradlew.bat test`。
 - 2026-03-08：已完成 M3 第二刀，新增 `JdkHttpTransport`，并通过本地 `HttpServer` 验证真实 GET/POST/PUT/DELETE、redirect、cookie session reuse。
-- 第 3 条反作弊验收已满足；当前剩余差距聚焦在 async、proxy、timeout/重试语义补齐后，再评估是否可将 M3 标记为 done。
+- 2026-03-08：已完成 M3 第三刀，补齐 timeout/重试真行为测试，验证超时抛错与重试后恢复成功。
+- 第 3 条反作弊验收已满足；当前剩余差距聚焦在 async、proxy 语义补齐后，再评估是否可将 M3 标记为 done。
 
 ## Delivered Slice 1
 
@@ -63,4 +64,9 @@
 - `FetcherClient()`：默认可直接发起真实请求，不再强制注入 transport。
 - `FetcherSession()`：默认携带 cookie store，已验证跨请求 cookie 复用。
 - 本地 server 级联测试：覆盖 query params、表单 body、redirect 开关、stealthy headers 与 response parsing。
+
+## Delivered Slice 3
+
+- timeout/重试验证：使用本地 `HttpServer` 覆盖 `HttpTimeoutException` 与 `retries` 生效路径。
+- `JdkHttpTransport`：当前已确认 timeout 会沿 JDK `HttpClient` 语义抛出，`retries` 会在预算内重试 `IOException`。
 

@@ -7,6 +7,8 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import java.net.http.HttpTimeoutException
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -78,6 +80,32 @@ class StaticFetchersJdkTransportTest {
     }
 
     @Test
+    fun fetcherClientRetriesTimedOutRequestsWhenRetryBudgetExists() {
+        val client = FetcherClient()
+
+        val response = client.get(
+            server.url("/flaky-timeout"),
+            RequestOptions(timeout = 1, retries = 1),
+        )
+
+        assertEquals(200, response.status)
+        assertEquals("attempt-2", response.css("h1::text").get()?.value)
+        assertEquals(2, server.requestCount("/flaky-timeout"))
+    }
+
+    @Test
+    fun fetcherClientSurfacesTimeoutWhenRetryBudgetIsExhausted() {
+        val client = FetcherClient()
+
+        assertFailsWith<HttpTimeoutException> {
+            client.get(
+                server.url("/slow"),
+                RequestOptions(timeout = 1, retries = 0),
+            )
+        }
+    }
+
+    @Test
     fun fetcherSessionReusesCookiesAcrossRealRequests() {
         val session = FetcherSession(timeout = 45, retries = 5)
         session.open()
@@ -101,11 +129,14 @@ class StaticFetchersJdkTransportTest {
         private val server: HttpServer,
     ) : AutoCloseable {
         private val requests = mutableListOf<ObservedRequest>()
+        private val pathCounts = mutableMapOf<String, Int>()
 
         fun url(path: String): String = "http://127.0.0.1:${server.address.port}$path"
 
         fun lastRequest(path: String, method: String? = null): ObservedRequest? =
             requests.lastOrNull { it.path == path && (method == null || it.method == method) }
+
+        fun requestCount(path: String): Int = pathCounts[path] ?: 0
 
         override fun close() {
             server.stop(0)
@@ -143,6 +174,19 @@ class StaticFetchersJdkTransportTest {
                 val request = record(exchange)
                 respond(exchange, 200, html(request.headers["Cookie"] ?: "missing"), mapOf("Content-Type" to "text/html; charset=utf-8"))
             }
+            server.createContext("/slow") { exchange ->
+                record(exchange)
+                Thread.sleep(1_500)
+                respond(exchange, 200, html("slow"), mapOf("Content-Type" to "text/html; charset=utf-8"))
+            }
+            server.createContext("/flaky-timeout") { exchange ->
+                record(exchange)
+                val attempt = requestCount("/flaky-timeout")
+                if (attempt == 1) {
+                    Thread.sleep(1_500)
+                }
+                respond(exchange, 200, html("attempt-$attempt"), mapOf("Content-Type" to "text/html; charset=utf-8"))
+            }
         }
 
         private fun record(exchange: HttpExchange): ObservedRequest {
@@ -154,6 +198,7 @@ class StaticFetchersJdkTransportTest {
                 body = exchange.requestBody.readAllBytes().decodeToString(),
             )
             requests += request
+            pathCounts[request.path] = (pathCounts[request.path] ?: 0) + 1
             return request
         }
 
