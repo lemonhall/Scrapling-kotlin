@@ -35,7 +35,7 @@
 | REQ-0001-001 | `docs/plan/v1-parser-baseline.md`; `docs/plan/v1-parser-advanced.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"` 于 2026-03-08 通过；XPath 与 adaptive 已进入 M2 首刀，但更完整的 advanced 面仍待补齐 | doing |
 | REQ-0001-002 | `docs/plan/v1-parser-advanced.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.storage.*"` | XPath variables、selector generation、`save/retrieve/relocate`、`urlJoin`、`re/reFirst`、SQLite storage 于 2026-03-08 通过 | done |
 | REQ-0001-003 | `docs/plan/v1-parser-baseline.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"` 于 2026-03-08 通过 | done |
-| REQ-0001-004 | `docs/plan/v1-static-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` | `StaticFetchersTest` 已覆盖 Response 适配、GET/POST/PUT/DELETE、session 默认值与 double-open；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过，但真实 HTTP transport/cookie 复用仍待补齐 | doing |
+| REQ-0001-004 | `docs/plan/v1-static-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` | `StaticFetchersTest` + `StaticFetchersJdkTransportTest` 已覆盖 Response 适配、真实 GET/POST/PUT/DELETE、redirect、cookie session reuse、session 默认值与 double-open；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过，剩余 async/proxy/timeout 语义待补齐 | doing |
 | REQ-0001-005 | `docs/plan/v1-browser-fetchers.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` | 待执行 | todo |
 | REQ-0001-006 | `docs/plan/v1-spiders-core.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` | 待执行 | todo |
 | REQ-0001-007 | `docs/plan/v1-cli-and-mcp.md` | `./gradlew.bat test --tests "io.github.d4vinci.scrapling.cli.*"` | 待执行 | todo |
@@ -52,4 +52,4 @@
 
 - 当前仓库已初始化 Git，并启用按 slice `commit + push` 的交付纪律。
 - 浏览器抓取技术选型尚未锁定到具体实现层，需在 M4 前形成明确方案。
-- 解析层当前已完成 M1 + M2；M3 已落下首刀：`ResponseFactory`、`FetcherClient`、`FetcherSession` 与 `HttpTransport` 抽象已就位，真实 HTTP transport/cookie 复用仍在推进。
+- 解析层当前已完成 M1 + M2；M3 已完成 stub + 真实 HTTP 两刀，当前剩余 async/proxy/timeout 等静态抓取语义待补齐。

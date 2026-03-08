@@ -1,7 +1,7 @@
 package io.github.d4vinci.scrapling.fetchers.static
 
 class FetcherClient(
-    private val transport: HttpTransport,
+    private val transport: HttpTransport = JdkHttpTransport(),
 ) {
     fun get(url: String, options: RequestOptions = RequestOptions()): Response = request("GET", url, options)
 
@@ -16,4 +16,3 @@ class FetcherClient(
     private fun request(method: String, url: String, options: RequestOptions): Response =
         ResponseFactory.fromRaw(transport.request(method, url, options))
 }
-

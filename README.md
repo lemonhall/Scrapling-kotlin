@@ -23,6 +23,7 @@
 - 解析器基础层：`Selector`、`Selectors`、`TextHandler`、`TextHandlers`、`AttributesHandler`
 - 已验证语义：CSS 查询、`::text`、`::attr(...)`、`get/getall`、outer HTML、`prettify`、基础导航
 - M3 首切已落地：`fetchers.static` 中的 `ResponseFactory`、`Response`、`FetcherClient`、`FetcherSession`、`HttpTransport` 抽象
+- M3 第二刀已落地：`JdkHttpTransport`、真实 HTTP 请求、redirect 与 cookie session reuse 已通过本地 `HttpServer` 测试
 
 ## 快速命令
 

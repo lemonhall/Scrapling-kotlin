@@ -1,7 +1,7 @@
 package io.github.d4vinci.scrapling.fetchers.static
 
 class FetcherSession(
-    private val transport: HttpTransport,
+    private val transport: HttpTransport = JdkHttpTransport.sessionTransport,
     timeout: Int = 30,
     retries: Int = 3,
     val stealthyHeaders: Boolean = true,

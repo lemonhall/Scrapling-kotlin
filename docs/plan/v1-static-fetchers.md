@@ -46,8 +46,9 @@
 ## Current Status
 
 - 2026-03-08：已完成 M3 首切，新增 `RequestOptions`、`RawHttpResponse`、`HttpTransport`、`Response`、`ResponseFactory`、`FetcherClient`、`FetcherSession`。
-- 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`、`./gradlew.bat test`。
-- 当前仍未满足第 3 条反作弊验收：测试仍基于注入式 stub transport，下一刀需补真实 HTTP transport 与本地 server 级联测试。
+- 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.StaticFetchersJdkTransportTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.static.*"`、`./gradlew.bat test`。
+- 2026-03-08：已完成 M3 第二刀，新增 `JdkHttpTransport`，并通过本地 `HttpServer` 验证真实 GET/POST/PUT/DELETE、redirect、cookie session reuse。
+- 第 3 条反作弊验收已满足；当前剩余差距聚焦在 async、proxy、timeout/重试语义补齐后，再评估是否可将 M3 标记为 done。
 
 ## Delivered Slice 1
 
@@ -55,3 +56,11 @@
 - `Response`：复用 `Selector` 能力，已打通 `css(...)`、`xpath(...)`、`getAllText()`。
 - `FetcherClient`：提供 `get/post/put/delete` 同步门面，通过 `HttpTransport` 注入。
 - `FetcherSession`：提供默认 `timeout/retries/stealthyHeaders`、显式 `open()` 与 double-open 防护。
+
+## Delivered Slice 2
+
+- `JdkHttpTransport`：基于 JDK `HttpClient` 落地真实同步 HTTP transport。
+- `FetcherClient()`：默认可直接发起真实请求，不再强制注入 transport。
+- `FetcherSession()`：默认携带 cookie store，已验证跨请求 cookie 复用。
+- 本地 server 级联测试：覆盖 query params、表单 body、redirect 开关、stealthy headers 与 response parsing。
+
