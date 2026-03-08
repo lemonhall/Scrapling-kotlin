@@ -134,6 +134,17 @@ class BrowserFetchersTest {
     }
 
     @Test
+    fun stealthyFetcherMasksNavigatorWebdriver() {
+        val response = StealthyFetcher.fetch(
+            server.url("/webdriver-check"),
+            BrowserFetchOptions(waitSelector = "#webdriver"),
+        )
+
+        assertEquals(200, response.status)
+        assertEquals("undefined", response.css("#webdriver::text").get()?.value)
+    }
+
+    @Test
     fun stealthySessionDetectsCloudflareMarkers() {
         val matchingUrls = listOf(
             "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/123456",
@@ -339,6 +350,23 @@ class BrowserFetchersTest {
                           const webRtc = typeof window.RTCPeerConnection === 'undefined' ? 'webrtc-blocked' : 'webrtc-open';
                           const webgl = canvas.getContext('webgl') === null ? 'webgl-blocked' : 'webgl-open';
                           document.getElementById('result').textContent = `${'$'}{webRtc}|${'$'}{webgl}`;
+                        </script>
+                      </body>
+                    </html>
+                    """.trimIndent(),
+                )
+            }
+            server.createContext("/webdriver-check") { exchange ->
+                respond(
+                    exchange,
+                    200,
+                    """
+                    <html>
+                      <body>
+                        <div id="webdriver"></div>
+                        <script>
+                          const value = navigator.webdriver === undefined ? 'undefined' : String(navigator.webdriver);
+                          document.getElementById('webdriver').textContent = value;
                         </script>
                       </body>
                     </html>

@@ -11,8 +11,9 @@ import kotlinx.coroutines.withContext
 open class AsyncDynamicSession(
     private val defaultOptions: BrowserFetchOptions = BrowserFetchOptions(),
     val maxPages: Int = 1,
+    stealth: Boolean = false,
 ) : AutoCloseable {
-    private val delegate = DynamicSession(defaultOptions)
+    private val delegate = DynamicSession(defaultOptions, stealth)
     private val semaphore = Semaphore(maxPages)
     private val engineMutex = Mutex()
 
@@ -62,4 +63,4 @@ open class AsyncDynamicSession(
 class AsyncStealthySession(
     defaultOptions: BrowserFetchOptions = BrowserFetchOptions(blockWebRtc = true),
     maxPages: Int = 1,
-) : AsyncDynamicSession(defaultOptions = defaultOptions, maxPages = maxPages)
+) : AsyncDynamicSession(defaultOptions = defaultOptions, maxPages = maxPages, stealth = true)

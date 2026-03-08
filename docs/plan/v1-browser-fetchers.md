@@ -48,7 +48,7 @@
 - 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
 - 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
-- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、async browser/session、pageAction 与 Cloudflare 检测的真实测试；真实 page reuse、Cloudflare 求解、更多 stealth 语义仍待补齐。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、pageAction 与 Cloudflare 检测的真实测试；真实 page reuse、Cloudflare 求解仍待补齐。
 
 ## Delivered Slice 1
 
@@ -75,3 +75,10 @@
 - 浏览器请求选项语义：新增 `extraHeaders`、`cookies` 与 `networkIdle` 的真实回归测试，确保 fetcher 侧选项会真正传递到浏览器上下文与导航等待策略。
 - 本地测试路由：补齐 `/echo-header`、`/cookie-page`、`/idle-page`、`/idle-data`，不依赖静态 fixture，直接验证浏览器发出的请求头、页面内 cookie 与异步网络收敛行为。
 - 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 再次通过。
+
+## Delivered Slice 5
+
+- `BrowserLaunchSupport`：对齐上游浏览器 launch 语义，补齐 `DEFAULT_ARGS` / `STEALTH_ARGS` / `HARMFUL_ARGS`，并把 `realChrome` 通道从临时的 `msedge` 修正为上游一致的 `chrome`。
+- `BrowserFetchOptions.hideCanvas`：新增 `hideCanvas` 选项，并把 `blockWebRtc`、`allowWebgl`、`hideCanvas` 映射到 Chromium launch flags，减少仅靠页面注入脚本兜底的偏差。
+- `BrowserStealth`：补齐 `navigator.webdriver` 伪装、`window.chrome.runtime` 兜底与 notifications permissions query 补丁；新增真实浏览器测试验证 stealth fetcher 页面内的 `navigator.webdriver` 不再暴露为 `true`。
+- 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserLaunchSupportTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过。

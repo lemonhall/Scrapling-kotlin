@@ -19,7 +19,7 @@
 - `M3 Static Fetchers`：done
 - `M3 Static Fetchers`：sync/async + proxy + timeout/重试 已落地；下一里程碑为 `M4 Browser Fetchers`
 - `M4 Browser Fetchers`：in progress
-- `M4 Browser Fetchers`：Playwright Java + Chromium sync/async 基线、browser request option 语义测试、pageAction、Cloudflare 检测已落地；真实 page reuse/Cloudflare 求解 仍待补齐
+- `M4 Browser Fetchers`：Playwright Java + Chromium sync/async 基线、browser request option 语义测试、stealth launch parity、pageAction、Cloudflare 检测已落地；真实 page reuse/Cloudflare 求解 仍待补齐
 
 ## Default Workflow
 

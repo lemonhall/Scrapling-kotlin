@@ -18,6 +18,7 @@ data class BrowserFetchOptions(
     val timezoneId: String? = null,
     val userAgent: String? = null,
     val realChrome: Boolean = false,
+    val hideCanvas: Boolean = false,
     val blockWebRtc: Boolean = false,
     val allowWebgl: Boolean = true,
 )

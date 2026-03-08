@@ -12,6 +12,7 @@ import io.github.d4vinci.scrapling.fetchers.static.Response
 
 open class DynamicSession(
     private val defaultOptions: BrowserFetchOptions = BrowserFetchOptions(),
+    private val stealth: Boolean = false,
 ) : AutoCloseable {
     private var playwright: Playwright? = null
     private var browser: Browser? = null
@@ -27,11 +28,7 @@ open class DynamicSession(
         check(!isOpen) { "DynamicSession is already open." }
 
         playwright = Playwright.create()
-        browser = playwright!!.chromium().launch(
-            BrowserType.LaunchOptions()
-                .setHeadless(defaultOptions.headless)
-                .setChannel(if (defaultOptions.realChrome) "msedge" else null),
-        )
+        browser = playwright!!.chromium().launch(BrowserLaunchSupport.launchOptions(defaultOptions, stealth))
         context = newContext(defaultOptions)
         isOpen = true
         return this
@@ -113,7 +110,7 @@ open class DynamicSession(
             })
         }
 
-        BrowserStealth.initScript(options)?.let(context::addInitScript)
+        BrowserStealth.initScript(options, stealth)?.let(context::addInitScript)
         return context
     }
 
@@ -130,7 +127,7 @@ open class DynamicSession(
 
 class StealthySession(
     defaultOptions: BrowserFetchOptions = BrowserFetchOptions(blockWebRtc = true),
-) : DynamicSession(defaultOptions) {
+) : DynamicSession(defaultOptions, stealth = true) {
     companion object {
         val cloudflarePattern: Regex = CloudflareInspector.challengeUrlPattern
 
