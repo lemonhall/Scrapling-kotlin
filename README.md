@@ -13,7 +13,8 @@
 
 - `M0 Foundation`：已完成
 - `M1 Parser Baseline`：已完成
-- `M2 Parser Advanced`：进行中（下一刀聚焦 XPath 与 adaptive）
+- `M2 Parser Advanced`：已完成
+- `M3 Static Fetchers`：进行中
 
 已落地内容：
 
@@ -69,4 +70,3 @@ src/
 - v1 索引：`docs/plan/v1-index.md`
 - M1 计划：`docs/plan/v1-parser-baseline.md`
 - M2 计划：`docs/plan/v1-parser-advanced.md`
-

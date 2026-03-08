@@ -18,8 +18,8 @@
 
 ## Current Slice
 
-- 已完成首刀：XPath variables、`SQLiteStorageSystem`、adaptive 默认初始化、基于相似度的元素重定位
-- 下一刀继续补：更广 XPath 语法、显式 `save/retrieve` 覆盖、更多 adaptive 边界测试
+- 已完成：XPath variables、`SQLiteStorageSystem`、adaptive 默认初始化、显式 `save/retrieve/relocate`、`re/reFirst`、`urlJoin`、selector generation、`Selectors.filter`
+- 下一轮如果回到 parser advanced，只补更广 XPath 语法与更多 adaptive 边界测试，不再阻塞 M3
 
 ## Non-Goals
 
@@ -29,7 +29,7 @@
 ## Acceptance
 
 1. 命令 `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"` 退出码为 `0`。
-2. 命令 `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.SelectorAdvancedTest" --tests "io.github.d4vinci.scrapling.core.storage.SQLiteStorageSystemTest"` 退出码为 `0`。
+2. 命令 `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.storage.*"` 退出码为 `0`。
 3. adaptive 测试必须至少包含一个 DOM 结构变形夹具，而不是同一页面重复保存/读取。
 4. 反作弊条款：XPath variables 不能只做字符串 contains 匹配，必须经过 XPath 或等价查询路径落到节点结果。
 
@@ -38,6 +38,7 @@
 - Create: `src/main/kotlin/io/github/d4vinci/scrapling/core/storage/*`
 - Modify: `src/main/kotlin/io/github/d4vinci/scrapling/parser/Selector.kt`
 - Create: `src/test/kotlin/io/github/d4vinci/scrapling/parser/SelectorAdvancedTest.kt`
+- Create: `src/test/kotlin/io/github/d4vinci/scrapling/parser/SelectorAdvancedUtilitiesTest.kt`
 - Create: `src/test/kotlin/io/github/d4vinci/scrapling/core/storage/SQLiteStorageSystemTest.kt`
 
 ## Steps

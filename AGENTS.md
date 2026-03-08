@@ -15,7 +15,8 @@
 
 - `M0 Foundation`：done
 - `M1 Parser Baseline`：done
-- `M2 Parser Advanced`：in progress
+- `M2 Parser Advanced`：done
+- `M3 Static Fetchers`：in progress
 
 ## Default Workflow
 
@@ -51,4 +52,3 @@
 - 不要执行未确认的危险删除操作
 - 不要提交 `.env`、密钥、token 等敏感信息
 - PowerShell 连续命令使用 `;`，不要用 `&&`
-

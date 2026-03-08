@@ -21,6 +21,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.w3c.dom.Node
 import org.w3c.dom.NodeList
+import java.net.URI
 
 private sealed interface SelectionNode
 
@@ -90,6 +91,18 @@ class Selector private constructor(
             is ElementNode -> node.element.outerHtml()
             is ValueNode -> ""
         }
+
+    val generateCssSelector: String
+        get() = generateSelection(css = true, fullPath = false)
+
+    val generateFullCssSelector: String
+        get() = generateSelection(css = true, fullPath = true)
+
+    val generateXpathSelector: String
+        get() = generateSelection(css = false, fullPath = false)
+
+    val generateFullXpathSelector: String
+        get() = generateSelection(css = false, fullPath = true)
 
     fun getAllText(): TextHandler = when (node) {
         is ElementNode -> TextHandler(node.element.text().normalizeWhitespace())
@@ -163,6 +176,19 @@ class Selector private constructor(
     fun get(): TextHandler = TextHandler(htmlContent)
 
     fun getall(): TextHandlers = TextHandlers(listOf(get()))
+
+    fun re(pattern: Regex, groupIndex: Int = 0): List<String> = get().re(pattern, groupIndex)
+
+    fun re(pattern: String, groupIndex: Int = 0): List<String> = re(Regex(pattern), groupIndex)
+
+    fun reFirst(pattern: Regex, groupIndex: Int = 0): String? = get().reFirst(pattern, groupIndex)
+
+    fun reFirst(pattern: String, groupIndex: Int = 0): String? = reFirst(Regex(pattern), groupIndex)
+
+    fun urlJoin(link: String): String {
+        if (url.isBlank()) return link
+        return runCatching { URI(url).resolve(link).toString() }.getOrElse { link }
+    }
 
     fun save(element: Selector, identifier: String) {
         val target = when (val targetNode = element.node) {
@@ -368,6 +394,11 @@ class Selector private constructor(
         score += mapSimilarity(original.attributes, data.attributes)
         checks += 1
 
+        if (original.attributes.isNotEmpty()) {
+            score += listSimilarity(original.attributes.values.sorted(), data.attributes.values.sorted())
+            checks += 1
+        }
+
         listOf("class", "id", "href", "src").forEach { attributeName ->
             original.attributes[attributeName]?.let { left ->
                 score += stringSimilarity(left, data.attributes[attributeName].orEmpty())
@@ -399,6 +430,49 @@ class Selector private constructor(
         }
 
         return if (checks == 0) 0 else ((score / checks) * 100).toInt()
+    }
+
+    private fun generateSelection(css: Boolean, fullPath: Boolean): String {
+        val start = when (node) {
+            is ElementNode -> this
+            is ValueNode -> return ""
+        }
+
+        val selectorPath = mutableListOf<String>()
+        var target: Selector? = start
+        while (target != null) {
+            val currentTarget = target
+            val parent = currentTarget.parent()
+            if (parent != null) {
+                val targetId = currentTarget.attrib["id"]?.value
+                if (!targetId.isNullOrBlank()) {
+                    val part = if (css) "#$targetId" else "[@id='$targetId']"
+                    selectorPath += part
+                    if (!fullPath) {
+                        return if (css) selectorPath.asReversed().joinToString(" > ") else "//*" + selectorPath.asReversed().joinToString("/")
+                    }
+                } else {
+                    var part = currentTarget.tag
+                    val sameTagSiblings = parent.children().filter { it.tag == currentTarget.tag }
+                    if (sameTagSiblings.size > 1) {
+                        val index = sameTagSiblings.indexOfFirst { it.htmlContent == currentTarget.htmlContent } + 1
+                        if (index > 0) {
+                            part += if (css) ":nth-of-type($index)" else "[$index]"
+                        }
+                    }
+                    selectorPath += part
+                }
+
+                target = parent
+                if (target == null || target.tag == "html") {
+                    return if (css) selectorPath.asReversed().joinToString(" > ") else "//" + selectorPath.asReversed().joinToString("/")
+                }
+            } else {
+                break
+            }
+        }
+
+        return if (css) selectorPath.asReversed().joinToString(" > ") else "//" + selectorPath.asReversed().joinToString("/")
     }
 
     companion object {
@@ -466,6 +540,16 @@ class Selectors internal constructor(
         percentage: Int = 0,
         variables: Map<String, Any?> = emptyMap(),
     ): Selectors = Selectors(values.flatMap { it.xpath(selector, identifier, adaptive, autoSave, percentage, variables) })
+
+    fun re(pattern: Regex, groupIndex: Int = 0): List<String> = values.flatMap { it.re(pattern, groupIndex) }
+
+    fun re(pattern: String, groupIndex: Int = 0): List<String> = re(Regex(pattern), groupIndex)
+
+    fun reFirst(pattern: Regex, groupIndex: Int = 0): String? = re(pattern, groupIndex).firstOrNull()
+
+    fun reFirst(pattern: String, groupIndex: Int = 0): String? = reFirst(Regex(pattern), groupIndex)
+
+    fun filter(predicate: (Selector) -> Boolean): Selectors = Selectors(values.filter(predicate))
 
     fun get(default: TextHandler? = null): TextHandler? = values.firstOrNull()?.get() ?: default
 
