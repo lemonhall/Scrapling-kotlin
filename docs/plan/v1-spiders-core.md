@@ -45,3 +45,11 @@
 
 - 并发模型与 session 生命周期的边界需要先在测试里锁住
 
+## Delivered Slice 1
+
+- `Request`：补齐 URL、session id、priority、meta、session options、SHA-1 fingerprint、copy、序列化后 callback 名称保留与 `restoreCallback()` 基础语义。
+- `ItemList` / `CrawlStats` / `CrawlResult`：补齐 items 导出、crawl 统计累计、结果 completed 视图与基础迭代能力。
+- `Scheduler` / `CheckpointManager`：补齐优先级队列、去重、snapshot/restore、checkpoint 原子写入与加载清理。
+- `SessionManager` / `StaticSpiderSession`：补齐默认 session、lazy session、生命周期管理、request meta 合并与 async static fetch 适配层。
+- `Spider` / `CrawlerEngine`：补齐默认 logger、`BLOCKED_CODES`、默认 session 配置、`startRequests()`、`pause()`/`stats` 边界与 crawl engine 基础骨架。
+- 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` 于 2026-03-09 通过；M5 当前进入真正的 engine 执行语义阶段。
