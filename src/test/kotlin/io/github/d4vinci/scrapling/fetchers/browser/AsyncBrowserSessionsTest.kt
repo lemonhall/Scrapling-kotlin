@@ -57,18 +57,33 @@ class AsyncBrowserSessionsTest {
     }
 
     @Test
-    fun asyncDynamicSessionReleasesPagesAfterEachFetch() = runTest {
+    fun asyncDynamicSessionReusesPooledPagesBetweenFetches() = runTest {
         AsyncDynamicSession().open().use { session ->
-            val first = session.fetch(server.url("/basic"))
+            val pageIds = mutableListOf<Int>()
+            val first = session.fetch(
+                server.url("/basic"),
+                BrowserFetchOptions(pageAction = { page -> pageIds += System.identityHashCode(page) }),
+            )
             assertEquals(200, first.status)
-            assertEquals(0, session.pagePool.pagesCount)
+            assertEquals(1, session.pagePool.pagesCount)
+            assertEquals(0, session.pagePool.busyCount)
 
-            val second = session.fetch(server.url("/dynamic"), BrowserFetchOptions(waitSelector = "#late"))
+            val second = session.fetch(
+                server.url("/dynamic"),
+                BrowserFetchOptions(
+                    waitSelector = "#late",
+                    pageAction = { page -> pageIds += System.identityHashCode(page) },
+                ),
+            )
             assertEquals(200, second.status)
-            assertEquals(0, session.pagePool.pagesCount)
+            assertEquals(2, pageIds.size)
+            assertEquals(pageIds.first(), pageIds.last())
+            assertEquals(1, session.pagePool.pagesCount)
+            assertEquals(0, session.pagePool.busyCount)
 
             val stats = session.getPoolStats()
-            assertEquals(0, stats["total_pages"])
+            assertEquals(1, stats["total_pages"])
+            assertEquals(0, stats["busy_pages"])
             assertEquals(1, stats["max_pages"])
         }
     }

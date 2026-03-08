@@ -13,11 +13,12 @@ open class AsyncDynamicSession(
     val maxPages: Int = 1,
     stealth: Boolean = false,
 ) : AutoCloseable {
-    private val delegate = DynamicSession(defaultOptions, stealth)
+    private val delegate = DynamicSession(defaultOptions, maxPages = maxPages, stealth = stealth)
     private val semaphore = Semaphore(maxPages)
     private val engineMutex = Mutex()
 
-    val pagePool = BrowserPagePool(maxPages)
+    val pagePool
+        get() = delegate.pagePool
 
     val context
         get() = delegate.context
@@ -36,23 +37,14 @@ open class AsyncDynamicSession(
         check(isOpen) { "AsyncDynamicSession must be opened before fetch." }
         return semaphore.withPermit {
             engineMutex.withLock {
-                pagePool.markPageAcquired()
-                try {
-                    withContext(Dispatchers.IO) {
-                        delegate.fetch(url, options)
-                    }
-                } finally {
-                    pagePool.markPageReleased()
+                withContext(Dispatchers.IO) {
+                    delegate.fetch(url, options)
                 }
             }
         }
     }
 
-    fun getPoolStats(): Map<String, Int> = mapOf(
-        "total_pages" to pagePool.pagesCount,
-        "busy_pages" to pagePool.busyCount,
-        "max_pages" to maxPages,
-    )
+    fun getPoolStats(): Map<String, Int> = delegate.getPoolStats()
 
     override fun close() {
         delegate.close()

@@ -48,7 +48,7 @@
 - 2026-03-08：已完成 M4 首切，新增 `Playwright Java + Chromium` 浏览器抓取基线。
 - 已通过验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserFetchersTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"`、`./gradlew.bat test`。
 - 首次运行时 Playwright 已自动下载浏览器二进制；仓库内额外提供 `./gradlew.bat installPlaywrightChromium` 任务做显式安装。
-- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、pageAction 与 Cloudflare 检测的真实测试；真实 page reuse、Cloudflare 求解仍待补齐。
+- 当前已满足动态内容、等待选择器、headless/headful、资源屏蔽、额外请求头、cookie 注入、network-idle 等待、基础 stealth 配置、stealth launch flags、`navigator.webdriver` 伪装、async browser/session、真实 page reuse、pageAction 与 Cloudflare 检测的真实测试；Cloudflare 求解仍待补齐。
 
 ## Delivered Slice 1
 
@@ -82,3 +82,10 @@
 - `BrowserFetchOptions.hideCanvas`：新增 `hideCanvas` 选项，并把 `blockWebRtc`、`allowWebgl`、`hideCanvas` 映射到 Chromium launch flags，减少仅靠页面注入脚本兜底的偏差。
 - `BrowserStealth`：补齐 `navigator.webdriver` 伪装、`window.chrome.runtime` 兜底与 notifications permissions query 补丁；新增真实浏览器测试验证 stealth fetcher 页面内的 `navigator.webdriver` 不再暴露为 `true`。
 - 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.BrowserLaunchSupportTest"`、`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过。
+
+## Delivered Slice 6
+
+- `BrowserPagePool`：从单纯计数器升级为真实 page 池，开始维护可复用的 Playwright `Page` 实例、busy/ready 状态与回收路径。
+- `DynamicSession` / `AsyncDynamicSession`：补齐 page 复用语义；顺序请求会复用同一 page，并在请求结束后执行 `unrouteAll()`、清空额外请求头、回到 `about:blank`，避免脏状态泄漏到下一次 fetch。
+- 请求期 cookies：`fetch()` 级别的 `cookies` 现在也会写入 context，不再只在 session 初始 `defaultOptions` 中生效。
+- 测试：sync/async session 现已验证两次请求会命中同一 page identity，且 pool 统计会保留一个 ready page；`./gradlew.bat test --tests "io.github.d4vinci.scrapling.fetchers.browser.*"` 与 `./gradlew.bat test` 于 2026-03-08 通过。

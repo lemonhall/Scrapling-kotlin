@@ -2,7 +2,6 @@ package io.github.d4vinci.scrapling.fetchers.browser
 
 import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserContext
-import com.microsoft.playwright.BrowserType
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.options.Cookie
@@ -12,13 +11,13 @@ import io.github.d4vinci.scrapling.fetchers.static.Response
 
 open class DynamicSession(
     private val defaultOptions: BrowserFetchOptions = BrowserFetchOptions(),
+    val maxPages: Int = 1,
     private val stealth: Boolean = false,
 ) : AutoCloseable {
     private var playwright: Playwright? = null
     private var browser: Browser? = null
     internal var context: BrowserContext? = null
 
-    val maxPages: Int = 1
     val pagePool = BrowserPagePool(maxPages)
 
     var isOpen: Boolean = false
@@ -37,15 +36,15 @@ open class DynamicSession(
     fun fetch(url: String, options: BrowserFetchOptions = defaultOptions): Response {
         check(isOpen) { "DynamicSession must be opened before fetch." }
         val activeContext = context ?: error("Browser context is not initialized.")
-        pagePool.markPageAcquired()
-        val page = activeContext.newPage()
+        val page = pagePool.acquirePage(activeContext::newPage)
         var blockedRequests = 0
         var continuedRequests = 0
+        var reusable = true
 
         try {
-            if (options.extraHeaders.isNotEmpty()) {
-                page.setExtraHTTPHeaders(options.extraHeaders)
-            }
+            preparePage(page)
+            applyCookies(activeContext, options)
+            page.setExtraHTTPHeaders(options.extraHeaders)
             if (options.disableResources || options.blockedDomains.isNotEmpty()) {
                 page.route(
                     "**/*",
@@ -81,9 +80,15 @@ open class DynamicSession(
                     continuedRequests = continuedRequests,
                 ),
             )
+        } catch (error: Exception) {
+            reusable = false
+            throw error
         } finally {
-            page.close()
-            pagePool.markPageReleased()
+            if (reusable && cleanupReusablePage(page)) {
+                pagePool.releasePage(page)
+            } else {
+                pagePool.discardPage(page)
+            }
         }
     }
 
@@ -102,19 +107,40 @@ open class DynamicSession(
                 .setUserAgent(options.userAgent),
         )
 
-        if (options.cookies.isNotEmpty()) {
-            context.addCookies(options.cookies.map { cookie ->
-                Cookie(cookie.name, cookie.value)
-                    .setDomain(cookie.domain)
-                    .setPath(cookie.path)
-            })
-        }
-
+        applyCookies(context, options)
         BrowserStealth.initScript(options, stealth)?.let(context::addInitScript)
         return context
     }
 
+    private fun applyCookies(context: BrowserContext, options: BrowserFetchOptions) {
+        if (options.cookies.isEmpty()) {
+            return
+        }
+        context.addCookies(options.cookies.map { cookie ->
+            Cookie(cookie.name, cookie.value)
+                .setDomain(cookie.domain)
+                .setPath(cookie.path)
+        })
+    }
+
+    private fun preparePage(page: Page) {
+        page.unrouteAll()
+        page.setExtraHTTPHeaders(emptyMap())
+    }
+
+    private fun cleanupReusablePage(page: Page): Boolean = try {
+        if (!page.isClosed()) {
+            page.unrouteAll()
+            page.setExtraHTTPHeaders(emptyMap())
+            page.navigate("about:blank", Page.NavigateOptions().setWaitUntil(WaitUntilState.LOAD))
+        }
+        true
+    } catch (_: Exception) {
+        false
+    }
+
     override fun close() {
+        pagePool.closeAll()
         context?.close()
         browser?.close()
         playwright?.close()

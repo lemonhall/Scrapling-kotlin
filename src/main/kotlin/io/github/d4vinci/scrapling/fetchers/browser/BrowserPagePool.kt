@@ -1,23 +1,56 @@
 package io.github.d4vinci.scrapling.fetchers.browser
 
+import com.microsoft.playwright.Page
+
 class BrowserPagePool(
     val maxPages: Int,
 ) {
-    var pagesCount: Int = 0
-        private set
+    private data class Entry(
+        val page: Page,
+        var busy: Boolean,
+    )
 
-    var busyCount: Int = 0
-        private set
+    private val entries = mutableListOf<Entry>()
+
+    val pagesCount: Int
+        @Synchronized get() = entries.size
+
+    val busyCount: Int
+        @Synchronized get() = entries.count { it.busy }
 
     @Synchronized
-    fun markPageAcquired() {
-        pagesCount += 1
-        busyCount += 1
+    fun acquirePage(factory: () -> Page): Page {
+        entries.removeAll { it.page.isClosed() }
+        entries.firstOrNull { !it.busy }?.let { entry ->
+            entry.busy = true
+            return entry.page
+        }
+        check(entries.size < maxPages) { "Maximum page limit ($maxPages) reached." }
+        val page = factory()
+        entries += Entry(page = page, busy = true)
+        return page
     }
 
     @Synchronized
-    fun markPageReleased() {
-        pagesCount = (pagesCount - 1).coerceAtLeast(0)
-        busyCount = (busyCount - 1).coerceAtLeast(0)
+    fun releasePage(page: Page) {
+        entries.firstOrNull { it.page == page }?.busy = false
+    }
+
+    @Synchronized
+    fun discardPage(page: Page) {
+        entries.removeAll { it.page == page }
+        if (!page.isClosed()) {
+            page.close()
+        }
+    }
+
+    @Synchronized
+    fun closeAll() {
+        entries.toList().forEach { entry ->
+            if (!entry.page.isClosed()) {
+                entry.page.close()
+            }
+        }
+        entries.clear()
     }
 }

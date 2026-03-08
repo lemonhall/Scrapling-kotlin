@@ -196,12 +196,24 @@ class BrowserFetchersTest {
         try {
             assertTrue(session.isOpen)
             assertFailsWith<IllegalStateException> { session.open() }
-            val first = session.fetch(server.url("/basic"))
-            val second = session.fetch(server.url("/basic"))
+            val pageIds = mutableListOf<Int>()
+            val first = session.fetch(
+                server.url("/basic"),
+                BrowserFetchOptions(pageAction = { page -> pageIds += System.identityHashCode(page) }),
+            )
+            val second = session.fetch(
+                server.url("/basic"),
+                BrowserFetchOptions(pageAction = { page -> pageIds += System.identityHashCode(page) }),
+            )
 
             assertEquals(200, first.status)
             assertEquals(200, second.status)
             assertNotNull(session.context)
+            assertEquals(2, pageIds.size)
+            assertEquals(pageIds.first(), pageIds.last())
+            assertEquals(1, session.pagePool.pagesCount)
+            assertEquals(0, session.pagePool.busyCount)
+            assertEquals(1, session.getPoolStats()["total_pages"])
         } finally {
             session.close()
         }
