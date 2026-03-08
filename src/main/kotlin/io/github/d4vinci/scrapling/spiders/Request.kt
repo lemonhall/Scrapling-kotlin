@@ -1,6 +1,7 @@
 package io.github.d4vinci.scrapling.spiders
 
 import io.github.d4vinci.scrapling.fetchers.static.Response
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -18,10 +19,10 @@ import kotlin.reflect.full.memberFunctions
 
 class Request(
     val url: String,
-    val sid: String = "",
+    var sid: String = "",
     @Transient var callback: KFunction<*>? = null,
-    val priority: Int = 0,
-    val dontFilter: Boolean = false,
+    var priority: Int = 0,
+    var dontFilter: Boolean = false,
     meta: Map<String, Any?> = emptyMap(),
     var retryCount: Int = 0,
     sessionOptions: Map<String, Any?> = emptyMap(),
@@ -119,6 +120,7 @@ class Request(
         fingerprint = null
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     companion object {
         private val stableJson = Json {
             prettyPrint = false

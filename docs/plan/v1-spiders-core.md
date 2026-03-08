@@ -53,3 +53,15 @@
 - `SessionManager` / `StaticSpiderSession`：补齐默认 session、lazy session、生命周期管理、request meta 合并与 async static fetch 适配层。
 - `Spider` / `CrawlerEngine`：补齐默认 logger、`BLOCKED_CODES`、默认 session 配置、`startRequests()`、`pause()`/`stats` 边界与 crawl engine 基础骨架。
 - 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` 于 2026-03-09 通过；M5 当前进入真正的 engine 执行语义阶段。
+
+## Delivered Slice 2
+
+- `dump()`：补齐与源项目 `_dump()` 对齐的 pretty JSON 输出辅助。
+- `CrawlerEngine`：补齐初始化状态、allowed domains、rate limiter、`normalizeRequest()`、`requestPause()`、checkpoint 保存/恢复、基础 `crawl()` 初始化与关闭语义。
+- `CrawlerEngineTest`：覆盖 `dump()`、engine init、域名过滤、rate limiter、request normalize、pause/checkpoint 以及基础 crawl 统计。
+- 验证：`./gradlew.bat test --tests "io.github.d4vinci.scrapling.spiders.*"` 于 2026-03-09 通过。
+
+## Remaining Gap
+
+- 当前 `CrawlerEngine` 仍是第二刀基础语义实现，尚未完成源项目级别的真实并发调度、response 处理、blocked retry、item/stream 输出与完整 crawl 闭环。
+- `REQ-0001-006` 继续保持 `doing`，直到上述能力与源项目对齐后再转 `done`。
