@@ -60,4 +60,40 @@ class SelectorTest {
         assertEquals(1, firstProduct.siblings().length)
         assertTrue(firstProduct.htmlContent.contains("Product 1"))
     }
+
+    @Test
+    fun htmlContentGetAndPrettifyUseSerializedNodeSemantics() {
+        val selector = Selector(html)
+        val firstProduct = selector.find("article.product")
+
+        assertNotNull(firstProduct)
+        assertTrue(firstProduct.htmlContent.startsWith("<article"))
+        assertEquals(firstProduct.htmlContent, firstProduct.get().value)
+        assertEquals(listOf(firstProduct.htmlContent), firstProduct.getall().extract())
+        assertTrue(firstProduct.prettify().value.contains("\n"))
+    }
+
+    @Test
+    fun pseudoSelectorsSupportTextAndAttributes() {
+        val selector = Selector(html)
+
+        assertEquals("Product 1", selector.css("article.product h3::text").get()?.value)
+        assertEquals(listOf("$10.99", "$20.99"), selector.css("article.product .price::text").getall().extract())
+        assertEquals(listOf("1", "2"), selector.css("article.product::attr(data-id)").getall().extract())
+    }
+
+    @Test
+    fun parentNextPreviousAndCollectionSelectionStayComposable() {
+        val selector = Selector(html)
+        val products = selector.css("article.product")
+        val firstProduct = products.first()
+        val secondProduct = products.last()
+
+        assertNotNull(firstProduct)
+        assertNotNull(secondProduct)
+        assertEquals("div", firstProduct.parent()?.tag)
+        assertEquals("2", firstProduct.next()?.attrib?.get("data-id")?.value)
+        assertEquals("1", secondProduct.previous()?.attrib?.get("data-id")?.value)
+        assertEquals(listOf("Product 1", "Product 2"), products.css("h3::text").getall().extract())
+    }
 }

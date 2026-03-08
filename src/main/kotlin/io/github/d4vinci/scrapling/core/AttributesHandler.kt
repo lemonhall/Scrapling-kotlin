@@ -7,6 +7,8 @@ class AttributesHandler private constructor(
     private val values: Map<String, String>,
 ) {
     companion object {
+        fun empty(): AttributesHandler = AttributesHandler(emptyMap())
+
         fun from(attributes: Attributes): AttributesHandler =
             AttributesHandler(attributes.associate { it.key to it.value })
     }

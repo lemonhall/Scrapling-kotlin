@@ -1,25 +1,72 @@
 # scrapling-kotlin
 
-`scrapling-kotlin` 的目标不是“做一个类似 Scrapling 的 Kotlin 抓取库”，而是**按塔山循环把 `E:\development\Scrapling` 的能力逐项、可追溯地复刻到 Kotlin**。
+`scrapling-kotlin` 的目标不是“做一个像 Scrapling 的 Kotlin 抓取库”，而是**以塔山循环为纪律，把 `E:\development\Scrapling` 的公开能力逐项、可追溯地复刻到 Kotlin/JVM**。
 
-当前阶段已建立：
-
-- 愿景文档：`docs/prd/VISION.md`
-- 首份 PRD：`docs/prd/PRD-0001-capability-parity.md`
-- v1 索引：`docs/plan/v1-index.md`
-- 源项目审计：`docs/research/source-project-audit-2026-03-08.md`
-
-首个实施切片聚焦解析器基础层：
-
-- `Selector`
-- `Selectors`
-- `TextHandler`
-- `AttributesHandler`
-
-约束基线参考：`E:\development\openagentic-sdk-kotlin`
+当前基线参考：`E:\development\openagentic-sdk-kotlin`
 
 - Kotlin `2.0.21`
 - JVM Toolchain `17`
 - Gradle Wrapper `8.9`
 - JUnit 5 + `kotlin-test`
+
+## 当前进度
+
+- `M0 Foundation`：已完成
+- `M1 Parser Baseline`：已完成
+- `M2 Parser Advanced`：进行中（下一刀聚焦 XPath 与 adaptive）
+
+已落地内容：
+
+- 文档矩阵：`docs/prd/VISION.md`、`docs/prd/PRD-0001-capability-parity.md`、`docs/plan/v1-index.md`
+- 源项目审计：`docs/research/source-project-audit-2026-03-08.md`
+- 解析器基础层：`Selector`、`Selectors`、`TextHandler`、`TextHandlers`、`AttributesHandler`
+- 已验证语义：CSS 查询、`::text`、`::attr(...)`、`get/getall`、outer HTML、`prettify`、基础导航
+
+## 快速命令
+
+Windows PowerShell：
+
+```powershell
+.\gradlew.bat test
+.\gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*"
+.\gradlew.bat test --tests "io.github.d4vinci.scrapling.core.*"
+```
+
+## 仓库结构
+
+```text
+docs/
+├─ prd/        # 愿景与需求定义
+├─ plan/       # v1 计划、追溯矩阵、里程碑状态
+└─ research/   # 对源项目/参考仓库的审计材料
+
+src/
+├─ main/kotlin/io/github/d4vinci/scrapling/
+└─ test/kotlin/io/github/d4vinci/scrapling/
+```
+
+## 里程碑路线
+
+- `M0 Foundation`：Gradle/Kotlin 工程基线、文档矩阵、首个红绿闭环
+- `M1 Parser Baseline`：解析器基础对象模型与 core 富类型
+- `M2 Parser Advanced`：XPath、自适应重定位、存储层
+- `M3 Static Fetchers`：HTTP fetchers、session、response
+- `M4 Browser Fetchers`：dynamic / stealth fetchers
+- `M5 Spiders`：Spider、scheduler、checkpoint、session manager
+- `M6 CLI + MCP + Docs`：CLI、Shell、MCP、用户文档
+
+## 工作方式
+
+- 严格按塔山循环推进：PRD → 计划 → 红测 → 绿实现 → 验证 → 回填证据
+- 默认在 `main` 分支持续推进
+- 每一刀尽量保持 `commit + push`
+- 不允许把“概念验证”包装成“能力复刻”
+
+## 相关文档
+
+- 愿景：`docs/prd/VISION.md`
+- PRD：`docs/prd/PRD-0001-capability-parity.md`
+- v1 索引：`docs/plan/v1-index.md`
+- M1 计划：`docs/plan/v1-parser-baseline.md`
+- M2 计划：`docs/plan/v1-parser-advanced.md`
 

@@ -25,9 +25,11 @@
 ## Acceptance
 
 1. `SelectorTest` 覆盖：CSS 查询、直接文本、递归文本、属性 JSON 解析、children/siblings。
-2. 命令 `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.SelectorTest"` 退出码为 `0`。
+2. `CoreTypesTest` 覆盖：`TextHandler.clean/json/re/reFirst`、`TextHandlers.extract/re/reFirst`、`AttributesHandler.lookup/search/jsonString`。
+3. 命令 `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.*"` 退出码为 `0`。
 3. 反作弊条款：解析逻辑必须基于真实 DOM 解析，不得通过夹具字符串分支硬编码返回结果。
 4. 反作弊条款：`text` 与 `getAllText()` 必须区分直接文本和递归文本，不能共用同一实现结果。
+5. 反作弊条款：`::text` / `::attr(...)` 选择结果必须来自 DOM 节点或属性值派生，不得用正则扫描整段 HTML 伪造。
 
 ## Files
 
@@ -36,11 +38,12 @@
 - Create: `src/main/kotlin/io/github/d4vinci/scrapling/core/AttributesHandler.kt`
 - Create: `src/main/kotlin/io/github/d4vinci/scrapling/parser/Selector.kt`
 - Create: `src/test/kotlin/io/github/d4vinci/scrapling/parser/SelectorTest.kt`
+- Create: `src/test/kotlin/io/github/d4vinci/scrapling/core/CoreTypesTest.kt`
 
 ## Steps
 
-1. 写失败测试：解析 fixture HTML 并断言基础语义
-2. 运行 `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.SelectorTest"` 到红
+1. 写失败测试：解析 fixture HTML 并断言基础语义与 core 富类型语义
+2. 运行 `./gradlew.bat test --tests "io.github.d4vinci.scrapling.parser.*" --tests "io.github.d4vinci.scrapling.core.*"` 到红
 3. 实现最小通过代码
 4. 运行相同命令到绿
 5. 运行 `./gradlew.bat test`，确认基础回归仍绿
@@ -49,4 +52,3 @@
 
 - `jsoup` 没有直接等价的 XPath 能力，后续需补桥接层或替换实现
 - 文本空白折叠语义需要 fixture 明确锁定
-
