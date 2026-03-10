@@ -4,8 +4,6 @@ import java.io.IOException
 import java.net.CookieManager
 import java.net.CookiePolicy
 import java.net.HttpCookie
-import java.net.InetSocketAddress
-import java.net.ProxySelector
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -16,18 +14,19 @@ import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class AsyncJdkHttpTransport(
     cookieManager: CookieManager? = null,
+    private val retryPause: AsyncRetryPause = DefaultAsyncRetryPause,
 ) : AsyncHttpTransport {
-    private val sharedCookieManager = cookieManager
-    private val redirectingClient = newClient(HttpClient.Redirect.NORMAL)
-    private val nonRedirectingClient = newClient(HttpClient.Redirect.NEVER)
+    private val clientPool = StaticHttpClientPool(cookieManager)
 
     override suspend fun request(method: String, url: String, options: RequestOptions): RawHttpResponse {
+        options.validateTransportSupport()
         var attempt = 0
         var lastFailure: IOException? = null
         val retries = options.retries.coerceAtLeast(0)
@@ -41,6 +40,9 @@ class AsyncJdkHttpTransport(
                     throw exception
                 }
                 attempt += 1
+                if (options.retryDelay > 0) {
+                    retryPause.pause(options.retryDelay.coerceAtLeast(0))
+                }
             }
         }
 
@@ -48,9 +50,9 @@ class AsyncJdkHttpTransport(
     }
 
     private suspend fun execute(method: String, url: String, options: RequestOptions): RawHttpResponse {
-        val requestHeaders = mergeRequestHeaders(options)
+        val proxyUrl = options.resolveProxy(url)
+        val requestHeaders = mergeRequestHeaders(options, proxyUrl)
         val request = buildRequest(method, url, options, requestHeaders)
-        val proxyUrl = resolveProxy(url, options)
         val response = httpClient(options.followRedirects, proxyUrl)
             .sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
             .await()
@@ -102,11 +104,13 @@ class AsyncJdkHttpTransport(
         return HttpRequest.BodyPublishers.noBody()
     }
 
-    private fun mergeRequestHeaders(options: RequestOptions): LinkedHashMap<String, String> {
+    private fun mergeRequestHeaders(options: RequestOptions, proxyUrl: String?): LinkedHashMap<String, String> {
         val headers = linkedMapOf<String, String>()
         if (options.stealthyHeaders) {
-            headers.putAll(defaultStealthyHeaders())
+            headers.putAll(defaultStealthyHeaders(options))
         }
+        options.authorizationHeader()?.let { headers.putIfAbsent("Authorization", it) }
+        options.resolvedProxyAuthorizationHeader(proxyUrl)?.let { headers.putIfAbsent("Proxy-Authorization", it) }
         headers.putAll(options.headers)
         if (options.cookies.isNotEmpty()) {
             headers["Cookie"] = options.cookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
@@ -132,13 +136,13 @@ class AsyncJdkHttpTransport(
     private fun formEncode(data: Map<String, String>): String =
         data.entries.joinToString("&") { (key, value) -> "${encode(key)}=${encode(value)}" }
 
-    private fun defaultStealthyHeaders(): Map<String, String> =
+    private fun defaultStealthyHeaders(options: RequestOptions): Map<String, String> =
         linkedMapOf(
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language" to "en-US,en;q=0.9",
             "Cache-Control" to "no-cache",
             "Pragma" to "no-cache",
-            "User-Agent" to DEFAULT_USER_AGENT,
+            "User-Agent" to options.resolvedUserAgent(),
         )
 
     private fun flattenHeaders(headers: HttpHeaders): Map<String, String> =
@@ -149,38 +153,8 @@ class AsyncJdkHttpTransport(
             .flatMap { headerValue -> HttpCookie.parse(headerValue) }
             .associate { cookie -> cookie.name to cookie.value }
 
-    private fun httpClient(followRedirects: Boolean, proxyUrl: String?): HttpClient {
-        if (proxyUrl == null) {
-            return if (followRedirects) redirectingClient else nonRedirectingClient
-        }
-        return newClient(redirect = if (followRedirects) HttpClient.Redirect.NORMAL else HttpClient.Redirect.NEVER, proxyUrl = proxyUrl)
-    }
-
-    private fun newClient(redirect: HttpClient.Redirect, proxyUrl: String? = null): HttpClient {
-        val builder = HttpClient.newBuilder()
-            .followRedirects(redirect)
-            .connectTimeout(Duration.ofSeconds(30))
-
-        sharedCookieManager?.let(builder::cookieHandler)
-        proxyUrl?.let { builder.proxy(ProxySelector.of(parseProxyAddress(it))) }
-        return builder.build()
-    }
-
-    private fun resolveProxy(url: String, options: RequestOptions): String? {
-        val scheme = URI.create(url).scheme?.lowercase() ?: "http"
-        return options.proxy ?: options.proxies[scheme] ?: options.proxies["all"]
-    }
-
-    private fun parseProxyAddress(proxyUrl: String): InetSocketAddress {
-        val uri = URI.create(proxyUrl)
-        val host = requireNotNull(uri.host) { "Proxy URL must include a host." }
-        val port = if (uri.port != -1) uri.port else when (uri.scheme?.lowercase()) {
-            "http" -> 80
-            "https" -> 443
-            else -> error("Unsupported proxy scheme: ${uri.scheme}")
-        }
-        return InetSocketAddress(host, port)
-    }
+    private fun httpClient(followRedirects: Boolean, proxyUrl: String?): HttpClient =
+        clientPool.client(followRedirects, proxyUrl)
 
     private fun reasonPhrase(status: Int): String = STATUS_REASONS[status] ?: ""
 
@@ -204,9 +178,6 @@ class AsyncJdkHttpTransport(
     companion object {
         val sessionTransport: AsyncJdkHttpTransport
             get() = AsyncJdkHttpTransport(CookieManager(null, CookiePolicy.ACCEPT_ALL))
-
-        private const val DEFAULT_USER_AGENT =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
 
         private val STATUS_REASONS = mapOf(
             200 to "OK",

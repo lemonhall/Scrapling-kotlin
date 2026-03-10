@@ -8,6 +8,7 @@ import io.github.d4vinci.scrapling.fetchers.browser.BrowserProxyUrl
 import io.github.d4vinci.scrapling.fetchers.browser.DynamicFetcher
 import io.github.d4vinci.scrapling.fetchers.browser.StealthyFetcher
 import io.github.d4vinci.scrapling.fetchers.static.FetcherClient
+import io.github.d4vinci.scrapling.fetchers.static.Impersonation
 import io.github.d4vinci.scrapling.fetchers.static.RequestOptions
 import io.github.d4vinci.scrapling.fetchers.static.Response
 import kotlinx.serialization.json.Json
@@ -191,6 +192,10 @@ class ScraplingCli(
                     parsed.proxy = args.valueAfter(index, "proxy")
                     index += 2
                 }
+                "--impersonate" -> {
+                    parsed.impersonate = Impersonation.parse(args.valueAfter(index, "impersonate"))
+                    index += 2
+                }
                 "-s", "--selector", "--css-selector" -> {
                     parsed.cssSelector = args.valueAfter(index, "selector")
                     index += 2
@@ -213,6 +218,7 @@ class ScraplingCli(
                 headers = headers,
                 cookies = cookies,
                 params = parseAssignments(parsed.params),
+                impersonate = parsed.impersonate,
                 timeout = parsed.timeout,
                 proxy = parsed.proxy,
             ),
@@ -342,6 +348,7 @@ class ScraplingCli(
         appendLine("  delete <url> <output_file>")
         appendLine("  fetch <url> <output_file>")
         appendLine("  stealthy-fetch <url> <output_file>")
+        appendLine("static options: -H/--headers, --cookies, -p/--params, -d/--data, -j/--json, --timeout, --proxy, --impersonate, -s/--selector")
     }
 
     fun shellHelp(): String = "shell options: -c/--code, -L/--loglevel"
@@ -374,6 +381,7 @@ private class StaticExtractArgs {
     val params: MutableList<String> = mutableListOf()
     val data: MutableList<String> = mutableListOf()
     var json: String? = null
+    var impersonate: Impersonation = Impersonation.Single("chrome")
     var timeout: Int? = 30
     var proxy: String? = null
     var cssSelector: String? = null

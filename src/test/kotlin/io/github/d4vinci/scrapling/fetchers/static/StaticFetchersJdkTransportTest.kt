@@ -101,6 +101,65 @@ class StaticFetchersJdkTransportTest {
     }
 
     @Test
+    fun fetcherClientRotatesProxyWhenProxyRotatorIsConfigured() {
+        val firstProxy = RecordingProxyServer.start()
+        val secondProxy = RecordingProxyServer.start()
+        try {
+            val client = FetcherClient()
+            val rotator = ProxyRotator(listOf(firstProxy.proxyUrl(), secondProxy.proxyUrl()))
+
+            val first = client.get("http://example.test/first", RequestOptions(proxyRotator = rotator))
+            val second = client.get("http://example.test/second", RequestOptions(proxyRotator = rotator))
+
+            assertEquals(200, first.status)
+            assertEquals(200, second.status)
+            assertEquals(1, firstProxy.requestCount())
+            assertEquals(1, secondProxy.requestCount())
+        } finally {
+            firstProxy.close()
+            secondProxy.close()
+        }
+    }
+
+    @Test
+    fun fetcherClientRejectsProxyRotatorCombinedWithStaticProxyOptions() {
+        val rotator = ProxyRotator(listOf("http://127.0.0.1:8080"))
+        val client = FetcherClient()
+
+        assertFailsWith<IllegalArgumentException> {
+            client.get(server.url("/html"), RequestOptions(proxy = "http://127.0.0.1:8080", proxyRotator = rotator))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            client.get(server.url("/html"), RequestOptions(proxies = mapOf("http" to "http://127.0.0.1:8080"), proxyRotator = rotator))
+        }
+    }
+
+    @Test
+    fun fetcherClientRejectsUnsupportedHttp3Requests() {
+        val client = FetcherClient()
+
+        assertFailsWith<UnsupportedOperationException> {
+            client.get(server.url("/html"), RequestOptions(http3 = true))
+        }
+    }
+
+    @Test
+    fun fetcherClientMapsVersionedImpersonationIntoUserAgentHeader() {
+        val client = FetcherClient()
+
+        val response = client.get(
+            server.url("/html"),
+            RequestOptions(impersonate = Impersonation.Single("firefox102")),
+        )
+
+        assertEquals(200, response.status)
+        val request = server.lastRequest("/html")
+        assertNotNull(request)
+        val userAgent = request.headers.entries.firstOrNull { (key, _) -> key.equals("User-Agent", ignoreCase = true) }?.value.orEmpty()
+        assertTrue(userAgent.contains("Firefox/102.0"))
+    }
+
+    @Test
     fun fetcherClientRetriesTimedOutRequestsWhenRetryBudgetExists() {
         val client = FetcherClient()
 
@@ -261,4 +320,16 @@ class StaticFetchersJdkTransportTest {
         val headers: Map<String, String>,
         val body: String,
     )
+}
+
+
+private class CountingBlockingRetryPause : BlockingRetryPause {
+    var invocations: Int = 0
+        private set
+    val seconds: MutableList<Int> = mutableListOf()
+
+    override fun pause(seconds: Int) {
+        invocations += 1
+        this.seconds += seconds
+    }
 }

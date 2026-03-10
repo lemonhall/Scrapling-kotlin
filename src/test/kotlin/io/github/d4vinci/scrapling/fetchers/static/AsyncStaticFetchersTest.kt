@@ -72,6 +72,36 @@ class AsyncStaticFetchersTest {
     }
 
     @Test
+    fun asyncFetcherClientRotatesProxyWhenProxyRotatorIsConfigured() = runTest {
+        val firstProxy = RecordingProxyServer.start()
+        val secondProxy = RecordingProxyServer.start()
+        try {
+            val client = AsyncFetcherClient()
+            val rotator = ProxyRotator(listOf(firstProxy.proxyUrl(), secondProxy.proxyUrl()))
+
+            val first = client.get("http://example.test/first", RequestOptions(proxyRotator = rotator))
+            val second = client.get("http://example.test/second", RequestOptions(proxyRotator = rotator))
+
+            assertEquals(200, first.status)
+            assertEquals(200, second.status)
+            assertEquals(1, firstProxy.requestCount())
+            assertEquals(1, secondProxy.requestCount())
+        } finally {
+            firstProxy.close()
+            secondProxy.close()
+        }
+    }
+
+    @Test
+    fun asyncFetcherClientRejectsUnsupportedHttp3Requests() = runTest {
+        val client = AsyncFetcherClient()
+
+        assertFailsWith<UnsupportedOperationException> {
+            client.get(server.url("/html"), RequestOptions(http3 = true))
+        }
+    }
+
+    @Test
     fun asyncFetcherClientSupportsBodyMethodsRedirectsAndTimeoutRetry() = runTest {
         val client = AsyncFetcherClient()
 
@@ -236,4 +266,16 @@ class AsyncStaticFetchersTest {
         val headers: Map<String, String>,
         val body: String,
     )
+}
+
+
+private class CountingAsyncRetryPause : AsyncRetryPause {
+    var invocations: Int = 0
+        private set
+    val seconds: MutableList<Int> = mutableListOf()
+
+    override suspend fun pause(seconds: Int) {
+        invocations += 1
+        this.seconds += seconds
+    }
 }
